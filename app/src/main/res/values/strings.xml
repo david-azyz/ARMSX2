@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">ARMSX2</string>
-    <string name="app_name_tv">ARMSX2 for Android TV</string>
-    <string name="app_name_desktop">ARMSX2 for Desktop</string>
+    <string name="app_name">GoldenXS2</string>
+    <string name="app_name_tv">GoldenXS2 for Android TV</string>
+    <string name="app_name_desktop">GoldenXS2 for Desktop</string>
     <string name="controller_mapping_button">Edit Controller Mapping</string>
     <string name="controller_mapping_title">Controller Mapping</string>
     <string name="controller_mapping_instruction">Select an action to rebind. When prompted, press the new controller button.</string>
