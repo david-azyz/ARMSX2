@@ -146,9 +146,9 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <!-- Shoot (Circle) -->
+            <!-- Shoot (Square in PES / Bomba Patch) -->
             <kr.co.iefriends.pcsx2.input.view.PSButtonView
-                android:id="@+id/btn_pad_b"
+                android:id="@+id/btn_pad_x"
                 android:layout_width="@dimen/fc_btn_shoot"
                 android:layout_height="@dimen/fc_btn_shoot"
                 android:layout_marginEnd="4dp"
@@ -164,7 +164,7 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginBottom="18dp"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/btn_pad_b" />
+                app:layout_constraintEnd_toStartOf="@id/btn_pad_x" />
 
             <!-- Through ball (Triangle) -->
             <kr.co.iefriends.pcsx2.input.view.PSButtonView
@@ -173,12 +173,12 @@
                 android:layout_height="@dimen/fc_btn_small"
                 android:layout_marginEnd="10dp"
                 android:layout_marginBottom="14dp"
-                app:layout_constraintBottom_toTopOf="@id/btn_pad_b"
+                app:layout_constraintBottom_toTopOf="@id/btn_pad_x"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-            <!-- Cross / lob (Square) -->
+            <!-- Long pass / cross (Circle in PES / Bomba Patch) -->
             <kr.co.iefriends.pcsx2.input.view.PSButtonView
-                android:id="@+id/btn_pad_x"
+                android:id="@+id/btn_pad_b"
                 android:layout_width="@dimen/fc_btn_small"
                 android:layout_height="@dimen/fc_btn_small"
                 android:layout_marginEnd="14dp"
@@ -204,7 +204,7 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginBottom="12dp"
                 app:layout_constraintBottom_toTopOf="@id/btn_pad_r1"
-                app:layout_constraintEnd_toStartOf="@id/btn_pad_x" />
+                app:layout_constraintEnd_toStartOf="@id/btn_pad_b" />
 
             <!-- Right stick: only shown in the "2 Sticks" mode -->
             <kr.co.iefriends.pcsx2.input.view.JoystickView
@@ -219,9 +219,9 @@
             <TextView
                 style="@style/FcButtonLabel"
                 android:text="@string/fc_label_shoot"
-                app:layout_constraintTop_toBottomOf="@id/btn_pad_b"
-                app:layout_constraintStart_toStartOf="@id/btn_pad_b"
-                app:layout_constraintEnd_toEndOf="@id/btn_pad_b" />
+                app:layout_constraintTop_toBottomOf="@id/btn_pad_x"
+                app:layout_constraintStart_toStartOf="@id/btn_pad_x"
+                app:layout_constraintEnd_toEndOf="@id/btn_pad_x" />
 
             <TextView
                 style="@style/FcButtonLabel"
@@ -240,9 +240,9 @@
             <TextView
                 style="@style/FcButtonLabel"
                 android:text="@string/fc_label_cross"
-                app:layout_constraintTop_toBottomOf="@id/btn_pad_x"
-                app:layout_constraintStart_toStartOf="@id/btn_pad_x"
-                app:layout_constraintEnd_toEndOf="@id/btn_pad_x" />
+                app:layout_constraintTop_toBottomOf="@id/btn_pad_b"
+                app:layout_constraintStart_toStartOf="@id/btn_pad_b"
+                app:layout_constraintEnd_toEndOf="@id/btn_pad_b" />
 
             <TextView
                 style="@style/FcButtonLabel"
