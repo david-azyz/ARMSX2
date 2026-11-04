@@ -86,17 +86,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <kr.co.iefriends.pcsx2.input.view.PSShoulderButtonView
-                android:id="@+id/btn_pad_l1"
-                android:layout_width="51dp"
-                android:layout_height="52dp"
-                android:layout_marginStart="6dp"
-                android:layout_marginTop="6dp"
-                android:layout_marginEnd="6dp"
-                android:layout_marginBottom="6dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btn_pad_l2" />
-
             <kr.co.iefriends.pcsx2.input.view.PSButtonView
                 android:id="@+id/btn_pad_l3"
                 android:layout_width="55dp"
@@ -129,17 +118,6 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <kr.co.iefriends.pcsx2.input.view.PSShoulderButtonView
-                android:id="@+id/btn_pad_r1"
-                android:layout_width="51dp"
-                android:layout_height="52dp"
-                android:layout_marginStart="6dp"
-                android:layout_marginTop="6dp"
-                android:layout_marginEnd="6dp"
-                android:layout_marginBottom="6dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btn_pad_r2" />
-
             <kr.co.iefriends.pcsx2.input.view.PSButtonView
                 android:id="@+id/btn_pad_r3"
                 android:layout_width="55dp"
@@ -154,68 +132,131 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
+        <!-- Football cluster (FC Mobile style). Face button meaning in most PS2
+             football games: X = pass, O = shoot, Triangle = through ball,
+             Square = cross/lob, R1 = sprint, L1 = switch player. -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/ll_pad_right"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="24dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginBottom="0dp"
+            android:clipChildren="false"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <kr.co.iefriends.pcsx2.input.view.JoystickView
-                android:id="@+id/joystick_right"
-                android:layout_width="140dp"
-                android:layout_height="140dp"
-                android:layout_marginEnd="20dp"
-                android:layout_marginBottom="12dp"
+            <!-- Shoot (Circle) -->
+            <kr.co.iefriends.pcsx2.input.view.PSButtonView
+                android:id="@+id/btn_pad_b"
+                android:layout_width="@dimen/fc_btn_shoot"
+                android:layout_height="@dimen/fc_btn_shoot"
+                android:layout_marginEnd="4dp"
+                android:layout_marginBottom="34dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-            <LinearLayout
-                android:id="@+id/ll_pad_right_buttons"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="20dp"
-                android:layout_marginBottom="6dp"
-                android:gravity="center"
-                android:orientation="vertical"
-                app:layout_constraintBottom_toTopOf="@id/joystick_right"
-                app:layout_constraintEnd_toEndOf="parent">
+            <!-- Pass (Cross) -->
+            <kr.co.iefriends.pcsx2.input.view.PSButtonView
+                android:id="@+id/btn_pad_a"
+                android:layout_width="@dimen/fc_btn_pass"
+                android:layout_height="@dimen/fc_btn_pass"
+                android:layout_marginEnd="8dp"
+                android:layout_marginBottom="18dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/btn_pad_b" />
 
-                <!-- Top button (Triangle/Y) -->
-                <kr.co.iefriends.pcsx2.input.view.PSButtonView
-                    android:id="@+id/btn_pad_y"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginBottom="-15dp" />
+            <!-- Through ball (Triangle) -->
+            <kr.co.iefriends.pcsx2.input.view.PSButtonView
+                android:id="@+id/btn_pad_y"
+                android:layout_width="@dimen/fc_btn_small"
+                android:layout_height="@dimen/fc_btn_small"
+                android:layout_marginEnd="10dp"
+                android:layout_marginBottom="14dp"
+                app:layout_constraintBottom_toTopOf="@id/btn_pad_b"
+                app:layout_constraintEnd_toEndOf="parent" />
 
-                <!-- Middle row (Square/X and Circle/B) -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="-15dp">
+            <!-- Cross / lob (Square) -->
+            <kr.co.iefriends.pcsx2.input.view.PSButtonView
+                android:id="@+id/btn_pad_x"
+                android:layout_width="@dimen/fc_btn_small"
+                android:layout_height="@dimen/fc_btn_small"
+                android:layout_marginEnd="14dp"
+                android:layout_marginBottom="10dp"
+                app:layout_constraintBottom_toTopOf="@id/btn_pad_a"
+                app:layout_constraintEnd_toStartOf="@id/btn_pad_y" />
 
-                    <kr.co.iefriends.pcsx2.input.view.PSButtonView
-                        android:id="@+id/btn_pad_x"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:layout_marginEnd="2dp" />
+            <!-- Sprint (R1) -->
+            <kr.co.iefriends.pcsx2.input.view.PSShoulderButtonView
+                android:id="@+id/btn_pad_r1"
+                android:layout_width="@dimen/fc_btn_sprint"
+                android:layout_height="@dimen/fc_btn_sprint"
+                android:layout_marginEnd="10dp"
+                android:layout_marginBottom="16dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/btn_pad_a" />
 
-                    <kr.co.iefriends.pcsx2.input.view.PSButtonView
-                        android:id="@+id/btn_pad_b"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp" />
-                </LinearLayout>
+            <!-- Switch player (L1) -->
+            <kr.co.iefriends.pcsx2.input.view.PSShoulderButtonView
+                android:id="@+id/btn_pad_l1"
+                android:layout_width="@dimen/fc_btn_switch"
+                android:layout_height="@dimen/fc_btn_switch"
+                android:layout_marginEnd="8dp"
+                android:layout_marginBottom="12dp"
+                app:layout_constraintBottom_toTopOf="@id/btn_pad_r1"
+                app:layout_constraintEnd_toStartOf="@id/btn_pad_x" />
 
-                <!-- Bottom button (Cross/A) -->
-                <kr.co.iefriends.pcsx2.input.view.PSButtonView
-                    android:id="@+id/btn_pad_a"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp" />
-            </LinearLayout>
+            <!-- Right stick: only shown in the "2 Sticks" mode -->
+            <kr.co.iefriends.pcsx2.input.view.JoystickView
+                android:id="@+id/joystick_right"
+                android:layout_width="110dp"
+                android:layout_height="110dp"
+                android:layout_marginBottom="8dp"
+                app:layout_constraintBottom_toTopOf="@id/btn_pad_y"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- Labels (not clickable, touches pass through to the buttons) -->
+            <TextView
+                style="@style/FcButtonLabel"
+                android:text="@string/fc_label_shoot"
+                app:layout_constraintTop_toBottomOf="@id/btn_pad_b"
+                app:layout_constraintStart_toStartOf="@id/btn_pad_b"
+                app:layout_constraintEnd_toEndOf="@id/btn_pad_b" />
+
+            <TextView
+                style="@style/FcButtonLabel"
+                android:text="@string/fc_label_pass"
+                app:layout_constraintTop_toBottomOf="@id/btn_pad_a"
+                app:layout_constraintStart_toStartOf="@id/btn_pad_a"
+                app:layout_constraintEnd_toEndOf="@id/btn_pad_a" />
+
+            <TextView
+                style="@style/FcButtonLabel"
+                android:text="@string/fc_label_through"
+                app:layout_constraintTop_toBottomOf="@id/btn_pad_y"
+                app:layout_constraintStart_toStartOf="@id/btn_pad_y"
+                app:layout_constraintEnd_toEndOf="@id/btn_pad_y" />
+
+            <TextView
+                style="@style/FcButtonLabel"
+                android:text="@string/fc_label_cross"
+                app:layout_constraintTop_toBottomOf="@id/btn_pad_x"
+                app:layout_constraintStart_toStartOf="@id/btn_pad_x"
+                app:layout_constraintEnd_toEndOf="@id/btn_pad_x" />
+
+            <TextView
+                style="@style/FcButtonLabel"
+                android:text="@string/fc_label_sprint"
+                app:layout_constraintTop_toBottomOf="@id/btn_pad_r1"
+                app:layout_constraintStart_toStartOf="@id/btn_pad_r1"
+                app:layout_constraintEnd_toEndOf="@id/btn_pad_r1" />
+
+            <TextView
+                style="@style/FcButtonLabel"
+                android:text="@string/fc_label_switch"
+                app:layout_constraintTop_toBottomOf="@id/btn_pad_l1"
+                app:layout_constraintStart_toStartOf="@id/btn_pad_l1"
+                app:layout_constraintEnd_toEndOf="@id/btn_pad_l1" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
