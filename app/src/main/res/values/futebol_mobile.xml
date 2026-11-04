@@ -25,6 +25,10 @@
     <string name="fm_pick_iso" translatable="false">Escolha a ISO do jogo. Isso só é pedido na primeira vez.</string>
     <string name="fm_iso_missing" translatable="false">Não encontrei a ISO. Escolha o arquivo de novo.</string>
 
+    <!-- Segurar X (passe/pressão) também segura R1 (correr). Toque rápido = só passe. -->
+    <bool name="fc_x_hold_sprint">true</bool>
+    <integer name="fc_x_hold_delay_ms">250</integer>
+
     <!-- Tamanhos -->
     <dimen name="fc_btn_shoot">92dp</dimen>
     <dimen name="fc_btn_pass">80dp</dimen>
