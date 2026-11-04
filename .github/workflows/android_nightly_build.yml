@@ -55,8 +55,8 @@ jobs:
         run: |
           # The release tag will be in the format: come.nanodata.armsx2-nightly-1.0.4-20251104-1411
           DATE_TIME=$(date +%Y%m%d-%H%M)
-          FULL_TAG="${{ steps.package_info.outputs.PACKAGE_NAME }}-nightly-${{ steps.package_info.outputs.VERSION_NAME }}-${DATE_TIME}"
-          TITLE="Nightly Build (DEBUG - ${{ steps.package_info.outputs.VERSION_NAME }}) - ${DATE_TIME}"
+          FULL_TAG="${{ steps.package_info.outputs.PACKAGE_NAME }}-v${{ steps.package_info.outputs.VERSION_NAME }}-${DATE_TIME}"
+          TITLE="BombaPatch Controle Davizz - v${{ steps.package_info.outputs.VERSION_NAME }} (${DATE_TIME})"
           
           echo "RELEASE_TAG=$FULL_TAG" >> $GITHUB_OUTPUT
           echo "RELEASE_TITLE=$TITLE" >> $GITHUB_OUTPUT
@@ -109,16 +109,21 @@ jobs:
           tag_name: ${{ needs.build.outputs.release_tag }}
           name: ${{ needs.build.outputs.release_title }}
           body: |
-            ## Automatic Night Release (DEBUG)
+            ## BombaPatch Controle Davizz
             
-            Automated build for community testing. This is an **unsigned** build for public distribution.
+            Emulador de PS2 (baseado no ARMSX2) com controle de toque no estilo dos jogos de futebol mobile, feito para o Bomba Patch.
             
-            * **Version:** ${{ needs.build.outputs.version_name }}
-            * **Package Name:** ${{ needs.build.outputs.package_name }}
-            * **Branch:** ${{ github.ref_name }}
-            * **Commit:** ${{ github.sha }}
+            **O que tem de diferente:**
+            * Abre direto no jogo depois da primeira configuração
+            * Botões grandes com nome: CHUTE, PASSE, ENFIADA, CRUZAR, CORRER e TROCAR
+            * Segurar o X também faz o jogador correr (pressão na defesa)
+            * Tamanho dos controles ajustável no menu do jogo
             
-            **Check the attached assets for the NIGHTLY APK.**
+            **Como instalar:** baixe o arquivo BombaPath_Controle_Davizz.apk logo abaixo, em Assets, e abra no celular. Se o Android pedir, permita instalar apps desconhecidos.
+            
+            **Importante:** o app não vem com o jogo. Na primeira vez ele pede a BIOS do PS2 e a ISO do Bomba Patch, que você precisa ter.
+            
+            Versão ${{ needs.build.outputs.version_name }}, compilação ${{ github.sha }}
           draft: false
           prerelease: false
           files: artifact/*.apk
