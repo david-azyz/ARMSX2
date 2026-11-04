@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Futebol Mobile: tudo o que você pode personalizar fica neste arquivo.
+  - Nome do app na tela inicial: fm_app_name
+  - Textos dos botões: fc_label_*
+  - Tamanho dos botões: fc_btn_*
+  - Tamanho do joystick: fc_stick_radius
+-->
+<resources>
+    <!-- Nome que aparece embaixo do ícone no celular -->
+    <string name="fm_app_name" translatable="false">Futebol PS2</string>
+
+    <!-- Rótulos dos botões (ataque). Ajuste se o seu jogo usar outra função. -->
+    <string name="fc_label_shoot" translatable="false">CHUTE</string>
+    <string name="fc_label_pass" translatable="false">PASSE</string>
+    <string name="fc_label_through" translatable="false">ENFIADA</string>
+    <string name="fc_label_cross" translatable="false">CRUZAR</string>
+    <string name="fc_label_sprint" translatable="false">CORRER</string>
+    <string name="fc_label_switch" translatable="false">TROCAR</string>
+    <string name="fc_mode_name" translatable="false">Futebol (estilo mobile)</string>
+
+    <!-- Mensagens do modo jogo único -->
+    <string name="fm_pick_iso" translatable="false">Escolha a ISO do jogo. Isso só é pedido na primeira vez.</string>
+    <string name="fm_iso_missing" translatable="false">Não encontrei a ISO. Escolha o arquivo de novo.</string>
+
+    <!-- Tamanhos -->
+    <dimen name="fc_btn_shoot">92dp</dimen>
+    <dimen name="fc_btn_pass">80dp</dimen>
+    <dimen name="fc_btn_small">68dp</dimen>
+    <dimen name="fc_btn_sprint">72dp</dimen>
+    <dimen name="fc_btn_switch">60dp</dimen>
+    <dimen name="fc_stick_radius">72dp</dimen>
+
+    <!-- Estilo dos rótulos embaixo dos botões -->
+    <style name="FcButtonLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">-4dp</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textColor">#E6FFFFFF</item>
+        <item name="android:shadowColor">#CC000000</item>
+        <item name="android:shadowRadius">4</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">1</item>
+        <item name="android:clickable">false</item>
+        <item name="android:focusable">false</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+</resources>
