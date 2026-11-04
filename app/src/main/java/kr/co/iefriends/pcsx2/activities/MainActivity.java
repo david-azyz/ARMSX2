@@ -4429,7 +4429,12 @@ public class MainActivity extends AppCompatActivity {
 
     /** R1 stays pressed while either the R1 button or a held X wants it. */
     private void fcUpdateR1() {
-        NativeApp.setPadButton(KeyEvent.KEYCODE_BUTTON_R1, 0, fcR1HeldByButton || fcR1HeldByX);
+        boolean held = fcR1HeldByButton || fcR1HeldByX;
+        NativeApp.setPadButton(KeyEvent.KEYCODE_BUTTON_R1, 0, held);
+        View r1 = findViewById(R.id.btn_pad_r1);
+        if (r1 instanceof PSShoulderButtonView) {
+            ((PSShoulderButtonView) r1).setVisualPressed(held); // CORRER lights up while sprinting
+        }
     }
     // endregion
 
