@@ -161,7 +161,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="4dp"
-            android:text="@string/drawer_ui_scale_label"
+            android:text="@string/fc_scale_label"
             android:textColor="?attr/colorPrimary"
             android:textStyle="bold" />
 
