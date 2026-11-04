@@ -53,7 +53,8 @@ android {
     flavorDimensions "distribution"
 
     defaultConfig {
-    applicationId "come.nanodata.armsx2"
+    // Futebol Mobile: pacote próprio, instala ao lado do ARMSX2 original sem conflito
+    applicationId "com.futebolmobile.ps2"
         minSdk 26
         targetSdk 35
         versionCode 22
@@ -88,6 +89,8 @@ android {
         buildConfigField "boolean", "ENABLE_RN", enableRN ? "true" : "false"
         buildConfigField "boolean", "DISCORD_INTEGRATION_ENABLED", isDiscordSdkAvailable ? "true" : "false"
         buildConfigField "boolean", "IS_GOOGLE_PLAY_BUILD", "false"
+        // Futebol Mobile: abre direto no jogo escolhido e usa o controle estilo mobile
+        buildConfigField "boolean", "GAME_MODE", "true"
     resValue "bool", "armsx2_documents_provider_enabled", "true"
     }
 
