@@ -4,7 +4,8 @@
   - Nome do app na tela inicial: fm_app_name
   - Textos dos botões: fc_label_*
   - Tamanho dos botões: fc_btn_*
-  - Tamanho do joystick: fc_stick_radius
+  - Tamanho e posição do analógico: fc_stick_*
+  - No jogo, o menu (botão no topo) tem o controle "Tamanho dos controles"
 -->
 <resources>
     <!-- Nome que aparece embaixo do ícone no celular -->
@@ -18,6 +19,7 @@
     <string name="fc_label_sprint" translatable="false">CORRER</string>
     <string name="fc_label_switch" translatable="false">TROCAR</string>
     <string name="fc_mode_name" translatable="false">Futebol (estilo mobile)</string>
+    <string name="fc_scale_label" translatable="false">Tamanho dos controles</string>
 
     <!-- Mensagens do modo jogo único -->
     <string name="fm_pick_iso" translatable="false">Escolha a ISO do jogo. Isso só é pedido na primeira vez.</string>
@@ -29,7 +31,9 @@
     <dimen name="fc_btn_small">68dp</dimen>
     <dimen name="fc_btn_sprint">72dp</dimen>
     <dimen name="fc_btn_switch">60dp</dimen>
-    <dimen name="fc_stick_radius">72dp</dimen>
+    <dimen name="fc_stick_size">150dp</dimen>
+    <dimen name="fc_stick_margin_start">28dp</dimen>
+    <dimen name="fc_stick_margin_bottom">20dp</dimen>
 
     <!-- Estilo dos rótulos embaixo dos botões -->
     <style name="FcButtonLabel">
