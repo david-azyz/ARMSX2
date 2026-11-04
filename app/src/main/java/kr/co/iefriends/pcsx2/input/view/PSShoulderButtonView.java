@@ -174,6 +174,14 @@ public class PSShoulderButtonView extends View {
         invalidate();
     }
 
+    /** Lights the button up (or not) without touching it, e.g. when another button triggers it. */
+    public void setVisualPressed(boolean pressed) {
+        if (isPressed != pressed) {
+            isPressed = pressed;
+            invalidate();
+        }
+    }
+
     public void setOnPSShoulderButtonListener(OnPSShoulderButtonListener listener) {
         this.listener = listener;
     }
