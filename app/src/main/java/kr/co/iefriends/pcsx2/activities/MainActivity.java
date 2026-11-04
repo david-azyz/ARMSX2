@@ -2772,7 +2772,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        if (mode != 3 && joystickLeft.isFloating()) {
+        if (joystickLeft.isFloating()) {
             joystickLeft.setFloating(false, 0f);
         }
         
@@ -2862,27 +2862,25 @@ public class MainActivity extends AppCompatActivity {
                 faceButtonsBaseScale = 1.4f;
                 break;
 
-            case 3: // Futebol (estilo mobile): joystick flutuante + botões grandes com rótulo
+            case 3: // Futebol (estilo mobile): analógico fixo + botões grandes com rótulo
                 joystickLeft.setVisibility(View.VISIBLE);
                 joystickRight.setVisibility(View.GONE);
                 dpadView.setVisibility(View.GONE);
                 llPadRight.setVisibility(View.VISIBLE);
 
-                android.util.DisplayMetrics fcDm = getResources().getDisplayMetrics();
-                int fcScreenW = Math.max(fcDm.widthPixels, fcDm.heightPixels);
-                int fcScreenH = Math.min(fcDm.widthPixels, fcDm.heightPixels);
                 ViewGroup.LayoutParams leftParams3 = joystickLeft.getLayoutParams();
-                // The floating stick can be grabbed anywhere in the lower-left area.
-                leftParams3.width = Math.round(fcScreenW * 0.42f);
-                leftParams3.height = Math.round(fcScreenH * 0.62f);
+                // Fixed analog stick, always in the same spot (bottom-left).
+                int fcStick = getResources().getDimensionPixelSize(R.dimen.fc_stick_size);
+                leftParams3.width = fcStick;
+                leftParams3.height = fcStick;
                 if (leftParams3 instanceof ViewGroup.MarginLayoutParams) {
                     ViewGroup.MarginLayoutParams m3 = (ViewGroup.MarginLayoutParams) leftParams3;
-                    m3.leftMargin = 0;
-                    m3.setMarginStart(0);
-                    m3.bottomMargin = 0;
+                    m3.leftMargin = getResources().getDimensionPixelSize(R.dimen.fc_stick_margin_start);
+                    m3.setMarginStart(m3.leftMargin);
+                    m3.bottomMargin = getResources().getDimensionPixelSize(R.dimen.fc_stick_margin_bottom);
                 }
                 joystickLeft.setLayoutParams(leftParams3);
-                joystickLeft.setFloating(true, getResources().getDimension(R.dimen.fc_stick_radius));
+                joystickLeft.setFloating(false, 0f);
 
                 llPadRight.setScaleX(1.0f);
                 llPadRight.setScaleY(1.0f);
