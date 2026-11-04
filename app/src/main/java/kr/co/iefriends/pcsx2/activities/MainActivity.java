@@ -3304,6 +3304,7 @@ public class MainActivity extends AppCompatActivity {
             btn_pad_a.setOnPSButtonListener(pressed -> {
                 int action = pressed ? MotionEvent.ACTION_DOWN : MotionEvent.ACTION_UP;
                 sendKeyAction(btn_pad_a, action, KeyEvent.KEYCODE_BUTTON_A);
+                fcHandleXHoldSprint(btn_pad_a, pressed);
             });
         }
 
@@ -3353,7 +3354,10 @@ public class MainActivity extends AppCompatActivity {
             applyShoulderIcon(btn_pad_r1, R.drawable.ic_ps_r1, "ic_controller_r1_button.png");
             btn_pad_r1.setScaleX(1.0f);
             btn_pad_r1.setScaleY(isNether ? 0.6f : 1.0f);
-            btn_pad_r1.setOnPSShoulderButtonListener(pressed -> NativeApp.setPadButton(KeyEvent.KEYCODE_BUTTON_R1, 0, pressed));
+            btn_pad_r1.setOnPSShoulderButtonListener(pressed -> {
+                fcR1HeldByButton = pressed;
+                fcUpdateR1();
+            });
         }
 
         PSShoulderButtonView btn_pad_l2 = findViewById(R.id.btn_pad_l2);
@@ -4397,6 +4401,37 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.onKeyUp(p_keyCode, p_event);
     }
+
+    // region Futebol Mobile: holding X (cross) also holds R1 (sprint)
+    private boolean fcR1HeldByButton = false;
+    private boolean fcR1HeldByX = false;
+    private Runnable fcXHoldRunnable = null;
+
+    /** A quick tap on X is a normal pass; keeping it held also sprints (R1) while pressing. */
+    private void fcHandleXHoldSprint(View xButton, boolean pressed) {
+        if (!getResources().getBoolean(R.bool.fc_x_hold_sprint)) return;
+        if (fcXHoldRunnable != null) {
+            xButton.removeCallbacks(fcXHoldRunnable);
+            fcXHoldRunnable = null;
+        }
+        if (pressed) {
+            fcXHoldRunnable = () -> {
+                fcXHoldRunnable = null;
+                fcR1HeldByX = true;
+                fcUpdateR1();
+            };
+            xButton.postDelayed(fcXHoldRunnable, getResources().getInteger(R.integer.fc_x_hold_delay_ms));
+        } else if (fcR1HeldByX) {
+            fcR1HeldByX = false;
+            fcUpdateR1();
+        }
+    }
+
+    /** R1 stays pressed while either the R1 button or a held X wants it. */
+    private void fcUpdateR1() {
+        NativeApp.setPadButton(KeyEvent.KEYCODE_BUTTON_R1, 0, fcR1HeldByButton || fcR1HeldByX);
+    }
+    // endregion
 
     private void sendKeyAction(View p_view, int p_action, int p_keycode) {
         if(p_action == MotionEvent.ACTION_DOWN) {
