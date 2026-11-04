@@ -231,7 +231,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_SETTINGS_GPU_PROFILE_OVERRIDE = "SET_GPU_PROFILE_OVERRIDE";
     public static final String EXTRA_SETTINGS_GPU_PROFILE_PERSISTED = "SET_GPU_PROFILE_PERSISTED";
     
-    private int currentControllerMode = 0; // 0=2 Sticks, 1=1 Stick+Face, 2=D-Pad Only
+    private int currentControllerMode = 0; // 0=2 Sticks, 1=1 Stick+Face, 2=D-Pad Only, 3=Futebol (estilo mobile)
 
     private final OnBackPressedCallback onBackPressCallback =
         new OnBackPressedCallback(false) {
@@ -640,6 +640,9 @@ public class MainActivity extends AppCompatActivity {
     try {
         handledLaunch = handleLaunchIntent(getIntent());
     } catch (Throwable ignored) {}
+    if (handledLaunch) {
+        fmBootDone = true; // another app already asked us to open a game
+    }
     if (!handledLaunch) {
         try {
             if (getIntent() != null && getIntent().getBooleanExtra("BOOT_BIOS", false)) {
@@ -2731,13 +2734,14 @@ public class MainActivity extends AppCompatActivity {
     private void setupControllerModeSpinner() {
         Spinner modeSpinner = findViewById(R.id.drawer_sp_controller_mode);
         if (modeSpinner != null) {
-            String[] modes = new String[]{"2 Sticks", "1 Stick + Face Buttons", "D-Pad Only"};
+            String[] modes = new String[]{"2 Sticks", "1 Stick + Face Buttons", "D-Pad Only", getString(R.string.fc_mode_name)};
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, modes);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             modeSpinner.setAdapter(adapter);
             
             // Load saved mode (default is 0 = 2 Sticks)
-            int savedMode = getSharedPreferences(PREFS, MODE_PRIVATE).getInt("controller_mode", 0);
+            int savedMode = getSharedPreferences(PREFS, MODE_PRIVATE).getInt("controller_mode", BuildConfig.GAME_MODE ? 3 : 0);
+            if (savedMode < 0 || savedMode >= modes.length) savedMode = BuildConfig.GAME_MODE ? 3 : 0;
             modeSpinner.setSelection(savedMode, false);
             
             modeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -2766,6 +2770,10 @@ public class MainActivity extends AppCompatActivity {
         
         if (joystickLeft == null || joystickRight == null || dpadView == null || llPadRight == null) {
             return;
+        }
+
+        if (mode != 3 && joystickLeft.isFloating()) {
+            joystickLeft.setFloating(false, 0f);
         }
         
         switch (mode) {
@@ -2852,6 +2860,42 @@ public class MainActivity extends AppCompatActivity {
                     llPadRight.setLayoutParams(faceParams2);
                 }
                 faceButtonsBaseScale = 1.4f;
+                break;
+
+            case 3: // Futebol (estilo mobile): joystick flutuante + botões grandes com rótulo
+                joystickLeft.setVisibility(View.VISIBLE);
+                joystickRight.setVisibility(View.GONE);
+                dpadView.setVisibility(View.GONE);
+                llPadRight.setVisibility(View.VISIBLE);
+
+                android.util.DisplayMetrics fcDm = getResources().getDisplayMetrics();
+                int fcScreenW = Math.max(fcDm.widthPixels, fcDm.heightPixels);
+                int fcScreenH = Math.min(fcDm.widthPixels, fcDm.heightPixels);
+                ViewGroup.LayoutParams leftParams3 = joystickLeft.getLayoutParams();
+                // The floating stick can be grabbed anywhere in the lower-left area.
+                leftParams3.width = Math.round(fcScreenW * 0.42f);
+                leftParams3.height = Math.round(fcScreenH * 0.62f);
+                if (leftParams3 instanceof ViewGroup.MarginLayoutParams) {
+                    ViewGroup.MarginLayoutParams m3 = (ViewGroup.MarginLayoutParams) leftParams3;
+                    m3.leftMargin = 0;
+                    m3.setMarginStart(0);
+                    m3.bottomMargin = 0;
+                }
+                joystickLeft.setLayoutParams(leftParams3);
+                joystickLeft.setFloating(true, getResources().getDimension(R.dimen.fc_stick_radius));
+
+                llPadRight.setScaleX(1.0f);
+                llPadRight.setScaleY(1.0f);
+                if (llPadRight.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                    ViewGroup.MarginLayoutParams faceParams3 = (ViewGroup.MarginLayoutParams) llPadRight.getLayoutParams();
+                    faceParams3.bottomMargin = 0;
+                    llPadRight.setLayoutParams(faceParams3);
+                }
+                View fcSprint = findViewById(R.id.btn_pad_r1);
+                if (fcSprint != null) { fcSprint.setScaleX(1.0f); fcSprint.setScaleY(1.0f); }
+                View fcSwitch = findViewById(R.id.btn_pad_l1);
+                if (fcSwitch != null) { fcSwitch.setScaleX(1.0f); fcSwitch.setScaleY(1.0f); }
+                faceButtonsBaseScale = 1.0f;
                 break;
         }
         applyJoystickStyle(joystickLeft);
@@ -3161,7 +3205,9 @@ public class MainActivity extends AppCompatActivity {
         View rightShoulders = findViewById(R.id.ll_pad_shoulders_right);
         applyScaleWithPivot(rightShoulders, multiplier, multiplier, 1f, 0f);
         JoystickView joystickLeft = findViewById(R.id.joystick_left);
-        applyScaleWithPivot(joystickLeft, multiplier, multiplier, 0f, 1f);
+        if (joystickLeft != null && !joystickLeft.isFloating()) {
+            applyScaleWithPivot(joystickLeft, multiplier, multiplier, 0f, 1f);
+        }
         JoystickView joystickRight = findViewById(R.id.joystick_right);
         applyScaleWithPivot(joystickRight, multiplier, multiplier, 1f, 1f);
         DPadView dpadView = findViewById(R.id.dpad_view);
@@ -3911,6 +3957,7 @@ public class MainActivity extends AppCompatActivity {
         RetroAchievementsBridge.setListener(retroAchievementsListener);
         RetroAchievementsBridge.refreshState();
         DiscordBridge.updateEngineActivity(this);
+        maybeGameModeBoot();
         ////
         if (mHIDDeviceManager != null) {
             mHIDDeviceManager.setFrozen(false);
@@ -4421,7 +4468,7 @@ public class MainActivity extends AppCompatActivity {
         }
         
         if (joystickRight != null) {
-            if (currentControllerMode == 1 || currentControllerMode == 2) {
+            if (currentControllerMode == 1 || currentControllerMode == 2 || currentControllerMode == 3) {
                 joystickRight.setVisibility(View.GONE);
             } else {
                 joystickRight.setVisibility(vis);
@@ -4429,7 +4476,7 @@ public class MainActivity extends AppCompatActivity {
         }
         
         if (dpadView != null) {
-            if (currentControllerMode == 1) {
+            if (currentControllerMode == 1 || currentControllerMode == 3) {
                 dpadView.setVisibility(View.GONE);
             } else {
                 dpadView.setVisibility(vis);
@@ -5324,6 +5371,10 @@ public class MainActivity extends AppCompatActivity {
         if (jr != null) jr.setVisibility(vis);
         View d = findViewById(R.id.dpad_view);
         if (d != null) d.setVisibility(vis);
+        if (!show && (currentControllerMode == 1 || currentControllerMode == 3)) {
+            if (jr != null) jr.setVisibility(View.GONE);
+            if (d != null) d.setVisibility(View.GONE);
+        }
         try {
             if (show) {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
@@ -5357,6 +5408,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void shutdownVmToHome() {
+        if (BuildConfig.GAME_MODE) {
+            // Single-game app: leaving the game closes the app instead of showing the game list.
+            pendingGameUri = null;
+            try {
+                getWindow().getDecorView().removeCallbacks(pendingLaunchRunnable);
+            } catch (Throwable ignored) {}
+            stopEmuThread();
+            m_szGamefile = "";
+            finishAndRemoveTask();
+            return;
+        }
         pendingGameUri = null;
         try {
             getWindow().getDecorView().removeCallbacks(pendingLaunchRunnable);
@@ -5499,6 +5561,75 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Cheap but effective: if emulator isn't running yet, boot BIOS first, then load the game like the File button flow.
+    // region Futebol Mobile: single-game mode
+    private static final String PREF_FM_ISO = "fm_iso_uri";
+    private boolean fmBootDone = false;
+
+    /** Called on every resume; boots the game once onboarding and BIOS are ready. */
+    private void maybeGameModeBoot() {
+        if (!BuildConfig.GAME_MODE || fmBootDone) return;
+        if (!TextUtils.isEmpty(m_szGamefile) || pendingGameUri != null) {
+            fmBootDone = true;
+            return;
+        }
+        if (!isOnboardingComplete() || !hasBios()) return; // first run: let the setup finish
+        fmBootDone = true;
+        gameModeBoot();
+    }
+
+    private void gameModeBoot() {
+        android.content.SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
+        String saved = sp.getString(PREF_FM_ISO, null);
+        if (!TextUtils.isEmpty(saved)) {
+            Uri uri = Uri.parse(saved);
+            if (canReadUri(uri)) {
+                getWindow().getDecorView().post(() -> launchGameWithPreflight(uri));
+                return;
+            }
+            sp.edit().remove(PREF_FM_ISO).apply();
+            try { Toast.makeText(this, R.string.fm_iso_missing, Toast.LENGTH_LONG).show(); } catch (Throwable ignored) {}
+        } else {
+            try { Toast.makeText(this, R.string.fm_pick_iso, Toast.LENGTH_LONG).show(); } catch (Throwable ignored) {}
+        }
+        openGameModeIsoPicker();
+    }
+
+    private boolean canReadUri(@NonNull Uri uri) {
+        try (java.io.InputStream in = getContentResolver().openInputStream(uri)) {
+            return in != null;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private void openGameModeIsoPicker() {
+        try {
+            Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            i.addCategory(Intent.CATEGORY_OPENABLE);
+            i.setType("*/*");
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+            startActivityResultFmPickIso.launch(i);
+        } catch (Throwable t) {
+            finishAndRemoveTask();
+        }
+    }
+
+    private final ActivityResultLauncher<Intent> startActivityResultFmPickIso = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
+                Uri uri = (result.getResultCode() == Activity.RESULT_OK && result.getData() != null)
+                        ? result.getData().getData() : null;
+                if (uri == null) {
+                    finishAndRemoveTask(); // no game chosen: nothing to play
+                    return;
+                }
+                try {
+                    getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } catch (Throwable ignored) {}
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(PREF_FM_ISO, uri.toString()).apply();
+                launchGameWithPreflight(uri);
+            });
+    // endregion
+
     private void launchGameWithPreflight(@NonNull Uri uri) {
         applyPerGameSettingsForUri(uri);
         handleSelectedGameUri(uri);
