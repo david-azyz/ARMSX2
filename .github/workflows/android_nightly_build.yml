@@ -69,7 +69,7 @@ jobs:
             echo "CRITICAL ERROR: Debug APK non found."
             exit 1 
           fi
-          NEW_FILE_PATH=$(echo "$ORIGINAL_PATH" | sed 's/-debug.apk/-nightly.apk/')
+          NEW_FILE_PATH="$(dirname "$ORIGINAL_PATH")/BombaPath_Controle_Davizz.apk"
           mv "$ORIGINAL_PATH" "$NEW_FILE_PATH"
           echo "APK_FILE_NIGHTLY=$NEW_FILE_PATH" >> $GITHUB_OUTPUT
           echo "APK renamed and saved in: $NEW_FILE_PATH"
