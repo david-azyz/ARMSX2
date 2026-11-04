@@ -50,6 +50,12 @@ public class JoystickView extends View {
     private Drawable baseDrawable;
     private Drawable knobDrawable;
     private float knobScaleFactor = 1.0f;
+
+    // Floating joystick (FC Mobile style): the stick appears wherever the
+    // finger touches inside this view and returns to its home spot on release.
+    private boolean floating = false;
+    private float floatingRadiusPx = 0f;
+    private float homeX, homeY;
     
     public interface OnJoystickMoveListener {
         void onJoystickMove(float x, float y);
@@ -106,9 +112,48 @@ public class JoystickView extends View {
         invalidate();
     }
 
+    /**
+     * Turns the floating mode on or off. In floating mode the view should be
+     * large (e.g. the left half of the screen); the stick itself keeps a fixed
+     * radius of {@code radiusPx}.
+     */
+    public void setFloating(boolean enabled, float radiusPx) {
+        floating = enabled;
+        floatingRadiusPx = radiusPx;
+        recalcGeometry(getWidth(), getHeight());
+        invalidate();
+    }
+
+    public boolean isFloating() {
+        return floating;
+    }
+
+    private void recalcGeometry(int w, int h) {
+        if (w <= 0 || h <= 0) return;
+        if (floating && floatingRadiusPx > 0f) {
+            baseRadius = Math.min(floatingRadiusPx, Math.min(w, h) / 2f);
+            homeX = Math.min(w / 2f, baseRadius * 1.6f);
+            homeY = Math.max(h / 2f, h - baseRadius * 1.4f);
+            centerX = homeX;
+            centerY = homeY;
+        } else {
+            centerX = w / 2f;
+            centerY = h / 2f;
+            baseRadius = Math.min(w, h) / 2f - 20;
+        }
+        knobRadius = baseRadius * 0.3f;
+        knobPosition.set(centerX, centerY);
+        updateDrawableBounds();
+    }
+
     private void updateDrawableBounds() {
         if (baseDrawable != null) {
-            baseDrawable.setBounds(0, 0, getWidth(), getHeight());
+            if (floating) {
+                baseDrawable.setBounds(Math.round(centerX - baseRadius), Math.round(centerY - baseRadius),
+                        Math.round(centerX + baseRadius), Math.round(centerY + baseRadius));
+            } else {
+                baseDrawable.setBounds(0, 0, getWidth(), getHeight());
+            }
         }
         if (knobDrawable != null) {
             int knobSize = Math.round(knobRadius * knobScaleFactor * 2f);
@@ -121,19 +166,22 @@ public class JoystickView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        
-        centerX = w / 2f;
-        centerY = h / 2f;
-        baseRadius = Math.min(w, h) / 2f - 20; 
-        knobRadius = baseRadius * 0.3f;
-        
-        knobPosition.set(centerX, centerY);
-        updateDrawableBounds();
+        recalcGeometry(w, h);
     }
     
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (floating && !isDragging) {
+            canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 110);
+        }
+        drawStick(canvas);
+        if (floating && !isDragging) {
+            canvas.restore();
+        }
+    }
+
+    private void drawStick(Canvas canvas) {
         if (baseDrawable != null) {
             baseDrawable.draw(canvas);
         } else {
@@ -158,6 +206,15 @@ public class JoystickView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                if (floating) {
+                    // Re-centre the stick under the finger, keeping it inside the view.
+                    float r = baseRadius;
+                    centerX = Math.max(r, Math.min(getWidth() - r, event.getX()));
+                    centerY = Math.max(r, Math.min(getHeight() - r, event.getY()));
+                    isDragging = true;
+                    updateKnobPosition(event.getX(), event.getY());
+                    return true;
+                }
                 float dx = event.getX() - centerX;
                 float dy = event.getY() - centerY;
                 float distance = (float) Math.sqrt(dx * dx + dy * dy);
@@ -180,6 +237,10 @@ public class JoystickView extends View {
             case MotionEvent.ACTION_CANCEL:
                 if (isDragging) {
                     isDragging = false;
+                    if (floating) {
+                        centerX = homeX;
+                        centerY = homeY;
+                    }
                     knobPosition.set(centerX, centerY);
                     analogX = 0.0f;
                     analogY = 0.0f;
