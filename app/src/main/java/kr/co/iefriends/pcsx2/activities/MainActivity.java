@@ -4484,23 +4484,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * PES / Bomba Patch faces can turn into spikes in replays because of float overflow in
-     * the vector units. Stronger clamping (VU "Extra + Preserve Sign", EE/FPU "Extra") keeps
-     * those values in range. Applied before each boot; turning it off restores the defaults.
+     * PES / Bomba Patch faces and hands turn into spikes with ARMSX2's VU0 recompiler.
+     * Running VU0 through the interpreter fixes it (tested on device). Applied before
+     * each boot; turning the option off in the pause menu brings the recompiler back.
      */
     private void fcApplyAccuracyFix() {
         boolean on = fcFaceFixEnabled();
-        String t = on ? "true" : "false";
-        String section = "EmuCore/CPU/Recompiler";
         try {
-            NativeApp.setSetting(section, "vu0Overflow", "bool", "true");
-            NativeApp.setSetting(section, "vu0ExtraOverflow", "bool", t);
-            NativeApp.setSetting(section, "vu0SignOverflow", "bool", t);
-            NativeApp.setSetting(section, "vu1Overflow", "bool", "true");
-            NativeApp.setSetting(section, "vu1ExtraOverflow", "bool", t);
-            NativeApp.setSetting(section, "vu1SignOverflow", "bool", t);
-            NativeApp.setSetting(section, "fpuOverflow", "bool", "true");
-            NativeApp.setSetting(section, "fpuExtraOverflow", "bool", t);
+            NativeApp.setSetting("EmuCore/CPU/Recompiler", "EnableVU0", "bool", on ? "false" : "true");
         } catch (Throwable ignored) {}
     }
     // endregion
