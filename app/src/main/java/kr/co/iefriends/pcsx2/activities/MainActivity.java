@@ -2308,6 +2308,8 @@ public class MainActivity extends AppCompatActivity {
         fcSetupAlphaSlider();
         View fcSizesBtn = findViewById(R.id.drawer_btn_fc_button_sizes);
         if (fcSizesBtn != null) fcSizesBtn.setOnClickListener(v -> fcShowButtonSizesDialog());
+        View fcMoveBtn = findViewById(R.id.drawer_btn_fc_move);
+        if (fcMoveBtn != null) fcMoveBtn.setOnClickListener(v -> fcEnterMoveMode());
         Slider uiScaleSlider = findViewById(R.id.drawer_slider_ui_scale);
         TextView uiScaleValue = findViewById(R.id.drawer_ui_scale_value);
         if (uiScaleSlider != null) {
@@ -3283,6 +3285,180 @@ public class MainActivity extends AppCompatActivity {
     }
     // endregion
 
+    // region Futebol Mobile: move each control by dragging it ("Mover controles")
+    private boolean fcMoveMode = false;
+    private boolean fcMoveWasPaused = false;
+    private View fcMoveBanner;
+
+    private String fcPosKey(int id) {
+        return "fc_pos_" + getResources().getResourceEntryName(id);
+    }
+
+    /**
+     * The button groups are small boxes; a button dragged outside its box would stop
+     * receiving touches. Making each group fill the screen keeps every button touchable
+     * wherever it is placed. Empty areas do not consume touches, so the game still gets them.
+     */
+    private void fcExpandContainers() {
+        int[] groups = {R.id.ll_pad_right, R.id.ll_pad_shoulders_left, R.id.ll_pad_shoulders_right, R.id.ll_pad_select_start};
+        for (int id : groups) {
+            View g = findViewById(id);
+            if (g == null) continue;
+            if (g instanceof ViewGroup) {
+                ((ViewGroup) g).setClipChildren(false);
+                ((ViewGroup) g).setClipToPadding(false);
+            }
+            ViewGroup.LayoutParams raw = g.getLayoutParams();
+            if (!(raw instanceof androidx.constraintlayout.widget.ConstraintLayout.LayoutParams)) continue;
+            androidx.constraintlayout.widget.ConstraintLayout.LayoutParams lp =
+                    (androidx.constraintlayout.widget.ConstraintLayout.LayoutParams) raw;
+            int parent = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+            lp.width = 0;
+            lp.height = 0;
+            lp.topToTop = parent;
+            lp.bottomToBottom = parent;
+            lp.startToStart = parent;
+            lp.endToEnd = parent;
+            g.setLayoutParams(lp);
+            if (id == R.id.ll_pad_select_start && g instanceof android.widget.LinearLayout) {
+                ((android.widget.LinearLayout) g).setGravity(android.view.Gravity.BOTTOM | android.view.Gravity.CENTER_HORIZONTAL);
+            }
+        }
+        View root = findViewById(R.id.in_game_root);
+        if (root instanceof ViewGroup) ((ViewGroup) root).setClipChildren(false);
+    }
+
+    private void fcApplyButtonOffsets() {
+        if (!BuildConfig.GAME_MODE) return;
+        float density = getResources().getDisplayMetrics().density;
+        android.content.SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
+        for (int id : FC_SIZE_IDS) {
+            float x = sp.getFloat(fcPosKey(id) + "_x", 0f) * density;
+            float y = sp.getFloat(fcPosKey(id) + "_y", 0f) * density;
+            View v = findViewById(id);
+            if (v != null) { v.setTranslationX(x); v.setTranslationY(y); }
+            if (id == R.id.joystick_left) {
+                View d = findViewById(R.id.dpad_view); // arrows share the stick's place
+                if (d != null) { d.setTranslationX(x); d.setTranslationY(y); }
+            }
+        }
+    }
+
+    private void fcInstallDragHandlers() {
+        for (int id : FC_SIZE_IDS) {
+            fcInstallDragHandler(findViewById(id), id);
+        }
+        fcInstallDragHandler(findViewById(R.id.dpad_view), R.id.joystick_left);
+    }
+
+    private void fcInstallDragHandler(View v, final int prefId) {
+        if (v == null) return;
+        final float[] start = new float[4]; // rawX, rawY, translationX, translationY
+        v.setOnTouchListener((view, ev) -> {
+            if (!fcMoveMode) return false; // normal play: the button works as usual
+            View parent = (View) view.getParent();
+            float ps = parent != null && parent.getScaleX() != 0f ? parent.getScaleX() : 1f;
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    start[0] = ev.getRawX();
+                    start[1] = ev.getRawY();
+                    start[2] = view.getTranslationX();
+                    start[3] = view.getTranslationY();
+                    view.setAlpha(0.6f);
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    view.setTranslationX(start[2] + (ev.getRawX() - start[0]) / ps);
+                    view.setTranslationY(start[3] + (ev.getRawY() - start[1]) / ps);
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    view.setAlpha(1f);
+                    float density = getResources().getDisplayMetrics().density;
+                    getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                            .putFloat(fcPosKey(prefId) + "_x", view.getTranslationX() / density)
+                            .putFloat(fcPosKey(prefId) + "_y", view.getTranslationY() / density)
+                            .apply();
+                    fcApplyButtonOffsets();
+                    return true;
+            }
+            return true;
+        });
+    }
+
+    private void fcEnterMoveMode() {
+        if (fcMoveMode) return;
+        closeInGameDrawer();
+        fcMoveMode = true;
+        fcMoveWasPaused = isVmPaused;
+        if (!fcMoveWasPaused) {
+            try { NativeApp.pause(); } catch (Throwable ignored) {}
+            isVmPaused = true;
+            updatePauseButtonIcon();
+        }
+        setOnScreenControlsVisible(true);
+        fcApplyControlsAlpha();
+
+        android.widget.LinearLayout bar = new android.widget.LinearLayout(this);
+        bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        bar.setPadding(dpToPx(16), dpToPx(8), dpToPx(8), dpToPx(8));
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+        bg.setColor(0xE60D1826);
+        bg.setCornerRadius(dpToPx(14));
+        bg.setStroke(dpToPx(2), 0xFF4FA8FF);
+        bar.setBackground(bg);
+        TextView hint = new TextView(this);
+        hint.setText(R.string.fc_move_hint);
+        hint.setTextColor(0xFFFFFFFF);
+        hint.setTextSize(14f);
+        bar.addView(hint);
+        com.google.android.material.button.MaterialButton reset = new com.google.android.material.button.MaterialButton(this);
+        reset.setText(R.string.fc_move_reset);
+        reset.setOnClickListener(x -> {
+            android.content.SharedPreferences.Editor e = getSharedPreferences(PREFS, MODE_PRIVATE).edit();
+            for (int id : FC_SIZE_IDS) e.remove(fcPosKey(id) + "_x").remove(fcPosKey(id) + "_y");
+            e.apply();
+            fcApplyButtonOffsets();
+        });
+        android.widget.LinearLayout.LayoutParams blp = new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        blp.setMarginStart(dpToPx(12));
+        bar.addView(reset, blp);
+        com.google.android.material.button.MaterialButton done = new com.google.android.material.button.MaterialButton(this);
+        done.setText(R.string.fc_move_done);
+        done.setOnClickListener(x -> fcExitMoveMode());
+        bar.addView(done, new android.widget.LinearLayout.LayoutParams(blp));
+
+        ViewGroup root = findViewById(R.id.in_game_root);
+        if (root instanceof androidx.constraintlayout.widget.ConstraintLayout) {
+            androidx.constraintlayout.widget.ConstraintLayout.LayoutParams lp =
+                    new androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+            lp.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+            lp.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+            lp.topMargin = dpToPx(12);
+            root.addView(bar, lp);
+            bar.setElevation(dpToPx(8));
+            fcMoveBanner = bar;
+        }
+    }
+
+    private void fcExitMoveMode() {
+        fcMoveMode = false;
+        if (fcMoveBanner != null && fcMoveBanner.getParent() instanceof ViewGroup) {
+            ((ViewGroup) fcMoveBanner.getParent()).removeView(fcMoveBanner);
+        }
+        fcMoveBanner = null;
+        fcApplyControlsAlpha();
+        if (!fcMoveWasPaused) {
+            try { NativeApp.resume(); } catch (Throwable ignored) {}
+            isVmPaused = false;
+            updatePauseButtonIcon();
+        }
+    }
+    // endregion
+
     // region Futebol Mobile: on-screen controls transparency (20%..100%)
     private static final String PREF_FC_ALPHA = "fc_controls_alpha";
 
@@ -3338,6 +3514,7 @@ public class MainActivity extends AppCompatActivity {
         applyScaleWithPivot(dpadView, multiplier, multiplier, 0f, 1f);
         fcApplyControlsAlpha();
         fcApplyButtonScales();
+        fcApplyButtonOffsets();
     }
 
     private void applyScaleWithPivot(View view, float scaleX, float scaleY, float pivotXF, float pivotYF) {
@@ -4542,6 +4719,10 @@ public class MainActivity extends AppCompatActivity {
     private androidx.appcompat.app.AlertDialog fcPauseDialog;
 
     private void fcOnBackInGame() {
+        if (fcMoveMode) {
+            fcExitMoveMode();
+            return;
+        }
         if (inGameDrawer != null && inGameDrawer.isDrawerOpen(GravityCompat.START)) {
             inGameDrawer.closeDrawer(GravityCompat.START);
             return;
@@ -4648,6 +4829,9 @@ public class MainActivity extends AppCompatActivity {
             if (v != null) { v.setScaleX(1.0f); v.setScaleY(1.0f); }
         }
         fcApplyButtonScales();
+        fcExpandContainers();
+        fcApplyButtonOffsets();
+        fcInstallDragHandlers();
     }
 
     private static final String PREF_FC_LEFT_DPAD = "fc_left_dpad";
