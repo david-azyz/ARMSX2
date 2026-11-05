@@ -2775,6 +2775,7 @@ public class MainActivity extends AppCompatActivity {
         if (joystickLeft.isFloating()) {
             joystickLeft.setFloating(false, 0f);
         }
+        joystickLeft.setFcStyle(false);
         
         switch (mode) {
             case 0: // 2 Sticks 
@@ -2881,6 +2882,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 joystickLeft.setLayoutParams(leftParams3);
                 joystickLeft.setFloating(false, 0f);
+                joystickLeft.setFcStyle(true);
 
                 llPadRight.setScaleX(1.0f);
                 llPadRight.setScaleY(1.0f);
@@ -3386,6 +3388,10 @@ public class MainActivity extends AppCompatActivity {
         if (btn_pad_r3 != null) {
             applyButtonIcon(btn_pad_r3, R.drawable.ic_ps_r3, "ic_controller_r3_button.png");
             btn_pad_r3.setOnPSButtonListener(pressed -> NativeApp.setPadButton(KeyEvent.KEYCODE_BUTTON_THUMBR, 0, pressed));
+        }
+
+        if (BuildConfig.GAME_MODE) {
+            applyFcLook();
         }
 
         applyUserUiScale();
@@ -4401,6 +4407,45 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.onKeyUp(p_keyCode, p_event);
     }
+
+    // region Futebol Mobile: modern button look (only the drawing changes, not positions or functions)
+    private void applyFcLook() {
+        fcStyleButton(R.id.btn_pad_x, kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_SQUARE, R.string.fc_label_shoot);
+        fcStyleButton(R.id.btn_pad_a, kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_CROSS, R.string.fc_label_pass);
+        fcStyleButton(R.id.btn_pad_y, kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_TRIANGLE, R.string.fc_label_through);
+        fcStyleButton(R.id.btn_pad_b, kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_CIRCLE, R.string.fc_label_cross);
+        fcStyleShoulder(R.id.btn_pad_r1, "R1", getString(R.string.fc_label_sprint));
+        fcStyleShoulder(R.id.btn_pad_l1, "L1", getString(R.string.fc_label_switch));
+        fcStyleShoulder(R.id.btn_pad_l2, "L2", null);
+        fcStyleShoulder(R.id.btn_pad_r2, "R2", null);
+        View l3 = findViewById(R.id.btn_pad_l3);
+        if (l3 instanceof PSButtonView) ((PSButtonView) l3).setFcStyle(kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_NONE, "L3");
+        View r3 = findViewById(R.id.btn_pad_r3);
+        if (r3 instanceof PSButtonView) ((PSButtonView) r3).setFcStyle(kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_NONE, "R3");
+        View sel = findViewById(R.id.btn_pad_select);
+        if (sel instanceof PSButtonView) ((PSButtonView) sel).setFcStyle(kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_NONE, "SELECT");
+        View start = findViewById(R.id.btn_pad_start);
+        if (start instanceof PSButtonView) ((PSButtonView) start).setFcStyle(kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_NONE, "START");
+        for (int id : new int[]{R.id.btn_pad_x, R.id.btn_pad_a, R.id.btn_pad_y, R.id.btn_pad_b, R.id.btn_pad_r1, R.id.btn_pad_l1}) {
+            View v = findViewById(id);
+            if (v != null) { v.setScaleX(1.0f); v.setScaleY(1.0f); }
+        }
+    }
+
+    private void fcStyleButton(int id, int symbol, int labelRes) {
+        View v = findViewById(id);
+        if (v instanceof PSButtonView) {
+            ((PSButtonView) v).setFcStyle(symbol, labelRes != 0 ? getString(labelRes) : null);
+        }
+    }
+
+    private void fcStyleShoulder(int id, String text, String label) {
+        View v = findViewById(id);
+        if (v instanceof PSShoulderButtonView) {
+            ((PSShoulderButtonView) v).setFcStyle(text, label);
+        }
+    }
+    // endregion
 
     // region Futebol Mobile: holding X (cross) also holds R1 (sprint)
     private boolean fcR1HeldByButton = false;
