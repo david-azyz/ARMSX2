@@ -215,49 +215,6 @@
                 app:layout_constraintBottom_toTopOf="@id/btn_pad_y"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-            <!-- Labels (not clickable, touches pass through to the buttons) -->
-            <TextView
-                style="@style/FcButtonLabel"
-                android:text="@string/fc_label_shoot"
-                app:layout_constraintTop_toBottomOf="@id/btn_pad_x"
-                app:layout_constraintStart_toStartOf="@id/btn_pad_x"
-                app:layout_constraintEnd_toEndOf="@id/btn_pad_x" />
-
-            <TextView
-                style="@style/FcButtonLabel"
-                android:text="@string/fc_label_pass"
-                app:layout_constraintTop_toBottomOf="@id/btn_pad_a"
-                app:layout_constraintStart_toStartOf="@id/btn_pad_a"
-                app:layout_constraintEnd_toEndOf="@id/btn_pad_a" />
-
-            <TextView
-                style="@style/FcButtonLabel"
-                android:text="@string/fc_label_through"
-                app:layout_constraintTop_toBottomOf="@id/btn_pad_y"
-                app:layout_constraintStart_toStartOf="@id/btn_pad_y"
-                app:layout_constraintEnd_toEndOf="@id/btn_pad_y" />
-
-            <TextView
-                style="@style/FcButtonLabel"
-                android:text="@string/fc_label_cross"
-                app:layout_constraintTop_toBottomOf="@id/btn_pad_b"
-                app:layout_constraintStart_toStartOf="@id/btn_pad_b"
-                app:layout_constraintEnd_toEndOf="@id/btn_pad_b" />
-
-            <TextView
-                style="@style/FcButtonLabel"
-                android:text="@string/fc_label_sprint"
-                app:layout_constraintTop_toBottomOf="@id/btn_pad_r1"
-                app:layout_constraintStart_toStartOf="@id/btn_pad_r1"
-                app:layout_constraintEnd_toEndOf="@id/btn_pad_r1" />
-
-            <TextView
-                style="@style/FcButtonLabel"
-                android:text="@string/fc_label_switch"
-                app:layout_constraintTop_toBottomOf="@id/btn_pad_l1"
-                app:layout_constraintStart_toStartOf="@id/btn_pad_l1"
-                app:layout_constraintEnd_toEndOf="@id/btn_pad_l1" />
-
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <kr.co.iefriends.pcsx2.input.view.JoystickView
