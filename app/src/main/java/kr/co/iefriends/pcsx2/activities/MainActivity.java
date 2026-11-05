@@ -237,7 +237,11 @@ public class MainActivity extends AppCompatActivity {
         new OnBackPressedCallback(false) {
             @Override
             public void handleOnBackPressed() {
-                shutdownVmToHome();
+                if (BuildConfig.GAME_MODE) {
+                    fcOnBackInGame(); // pause menu instead of quitting right away
+                } else {
+                    shutdownVmToHome();
+                }
             }
         };
     private final OnBackPressedCallback onSearchBackPressCallback =
@@ -2639,7 +2643,7 @@ public class MainActivity extends AppCompatActivity {
     private void setupDrawerSpinners() {
 		Spinner aspectSpinner = findViewById(R.id.drawer_sp_aspect_ratio);
 		if (aspectSpinner != null) {
-			ArrayAdapter<CharSequence> aspectAdapter = ArrayAdapter.createFromResource(this, R.array.aspect_ratios, android.R.layout.simple_spinner_item);
+			ArrayAdapter<CharSequence> aspectAdapter = ArrayAdapter.createFromResource(this, R.array.aspect_ratios_display, android.R.layout.simple_spinner_item);
 			aspectAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 			aspectSpinner.setAdapter(aspectAdapter);
 			final String[] aspectChoices = getResources().getStringArray(R.array.aspect_ratios);
@@ -2734,7 +2738,7 @@ public class MainActivity extends AppCompatActivity {
     private void setupControllerModeSpinner() {
         Spinner modeSpinner = findViewById(R.id.drawer_sp_controller_mode);
         if (modeSpinner != null) {
-            String[] modes = new String[]{"2 Sticks", "1 Stick + Face Buttons", "D-Pad Only", getString(R.string.fc_mode_name)};
+            String[] modes = new String[]{"2 analógicos", "1 analógico + botões", "Só setas", getString(R.string.fc_mode_name)};
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, modes);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             modeSpinner.setAdapter(adapter);
@@ -2776,6 +2780,9 @@ public class MainActivity extends AppCompatActivity {
             joystickLeft.setFloating(false, 0f);
         }
         joystickLeft.setFcStyle(false);
+        View fcToggle = findViewById(R.id.btn_fc_stick_toggle);
+        if (fcToggle != null) fcToggle.setVisibility(mode == 3 ? View.VISIBLE : View.GONE);
+        if (mode != 3) fcRestoreDpadLayout(dpadView);
         
         switch (mode) {
             case 0: // 2 Sticks 
@@ -2896,6 +2903,7 @@ public class MainActivity extends AppCompatActivity {
                 View fcSwitch = findViewById(R.id.btn_pad_l1);
                 if (fcSwitch != null) { fcSwitch.setScaleX(1.0f); fcSwitch.setScaleY(1.0f); }
                 faceButtonsBaseScale = 1.0f;
+                fcApplyLeftControl();
                 break;
         }
         applyJoystickStyle(joystickLeft);
@@ -3082,7 +3090,7 @@ public class MainActivity extends AppCompatActivity {
         "- Fffathur (icon design)\n" +
         "- vivimagic0 (icon design)";
     new MaterialAlertDialogBuilder(this)
-        .setTitle("About")
+        .setTitle("Sobre")
         .setMessage(message)
         .setPositiveButton(android.R.string.ok, (d, w) -> d.dismiss())
         .show();
@@ -3770,7 +3778,7 @@ public class MainActivity extends AppCompatActivity {
             "- Fffathur (icon design)\n" +
             "- vivimagic0 (icon design)";
         new MaterialAlertDialogBuilder(this)
-            .setTitle("About")
+            .setTitle("Sobre")
             .setMessage(message)
             .setPositiveButton("OK", (d, w) -> d.dismiss())
             .show();
@@ -3919,9 +3927,9 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!android.os.Environment.isExternalStorageManager()) {
                 new MaterialAlertDialogBuilder(this)
-                        .setTitle("Storage Access Required")
+                        .setTitle("Acesso aos arquivos necessário")
                         .setMessage("To load ELF files from external folders")
-                        .setPositiveButton("Settings", (dialog, which) -> {
+                        .setPositiveButton("Configurações", (dialog, which) -> {
                             try {
                                 Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
                                 intent.setData(Uri.parse("package:" + getPackageName()));
@@ -3931,7 +3939,7 @@ public class MainActivity extends AppCompatActivity {
                                 startActivity(intent);
                             }
                         })
-                        .setNegativeButton("Later", null)
+                        .setNegativeButton("Depois", null)
                         .show();
             }
         }
@@ -4080,13 +4088,13 @@ public class MainActivity extends AppCompatActivity {
         }
         storagePromptShown = true;
         new MaterialAlertDialogBuilder(this)
-                .setTitle("Storage location")
-                .setMessage("Do you wish to change where the emulator stores its data?")
-                .setNegativeButton("Cancel", (dialog, which) -> {
+                .setTitle("Pasta de dados")
+                .setMessage("Quer mudar a pasta onde o emulador guarda os dados?")
+                .setNegativeButton("Cancelar", (dialog, which) -> {
                     DataDirectoryManager.markPromptDone(this);
                     dialog.dismiss();
                 })
-                .setPositiveButton("Choose", (dialog, which) -> {
+                .setPositiveButton("Escolher", (dialog, which) -> {
                     dialog.dismiss();
                     launchDataDirectoryPicker();
                 })
@@ -4180,8 +4188,8 @@ public class MainActivity extends AppCompatActivity {
             int padding = dpToPx(24);
             progressBar.setPadding(padding, padding, padding, padding);
             dataDirProgressDialog = new MaterialAlertDialogBuilder(this)
-                    .setTitle("Moving data")
-                    .setMessage("Moving emulator data to the selected folder…")
+                    .setTitle("Movendo dados")
+                    .setMessage("Movendo os dados do emulador para a pasta escolhida…")
                     .setView(progressBar)
                     .setCancelable(false)
                     .create();
@@ -4233,6 +4241,9 @@ public class MainActivity extends AppCompatActivity {
         }
         isVmPaused = false;
         updatePauseButtonIcon();
+        if (BuildConfig.GAME_MODE) {
+            fcApplyAccuracyFix();
+        }
         mEmulationThread = new Thread(() -> {
             runOnUiThread(() -> {
                 try { if (NativeApp.isFullscreenUIEnabled()) setOnScreenControlsVisible(true); } catch (Throwable ignored) {}
@@ -4408,6 +4419,92 @@ public class MainActivity extends AppCompatActivity {
         return super.onKeyUp(p_keyCode, p_event);
     }
 
+    // region Futebol Mobile: pause menu on the phone's back button
+    private static final String PREF_FC_FACE_FIX = "fc_face_fix";
+    private androidx.appcompat.app.AlertDialog fcPauseDialog;
+
+    private void fcOnBackInGame() {
+        if (inGameDrawer != null && inGameDrawer.isDrawerOpen(GravityCompat.START)) {
+            inGameDrawer.closeDrawer(GravityCompat.START);
+            return;
+        }
+        if (fcPauseDialog != null && fcPauseDialog.isShowing()) {
+            return;
+        }
+        final boolean wasPaused = isVmPaused;
+        if (!wasPaused) {
+            try { NativeApp.pause(); } catch (Throwable ignored) {}
+            isVmPaused = true;
+            updatePauseButtonIcon();
+        }
+        final boolean[] faceFix = new boolean[]{fcFaceFixEnabled()};
+        final boolean faceFixBefore = faceFix[0];
+        Runnable resume = () -> {
+            if (!wasPaused) {
+                try { NativeApp.resume(); } catch (Throwable ignored) {}
+                isVmPaused = false;
+                updatePauseButtonIcon();
+            }
+        };
+        fcPauseDialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.fc_pause_title)
+                .setMultiChoiceItems(new CharSequence[]{getString(R.string.fc_pause_face_fix)}, faceFix,
+                        (dialog, which, isChecked) -> faceFix[0] = isChecked)
+                .setPositiveButton(R.string.fc_pause_continue, (dialog, which) -> {
+                    fcSaveFaceFix(faceFix[0], faceFixBefore);
+                    resume.run();
+                })
+                .setNegativeButton(R.string.fc_pause_exit, (dialog, which) -> {
+                    fcSaveFaceFix(faceFix[0], faceFixBefore);
+                    shutdownVmToHome();
+                })
+                .setNeutralButton(R.string.fc_pause_options, (dialog, which) -> {
+                    fcSaveFaceFix(faceFix[0], faceFixBefore);
+                    if (inGameDrawer != null) {
+                        setOnScreenControlsVisible(true);
+                        inGameDrawer.openDrawer(GravityCompat.START);
+                    }
+                    resume.run();
+                })
+                .setOnCancelListener(dialog -> {
+                    fcSaveFaceFix(faceFix[0], faceFixBefore);
+                    resume.run();
+                })
+                .show();
+    }
+
+    private void fcSaveFaceFix(boolean value, boolean before) {
+        if (value == before) return;
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(PREF_FC_FACE_FIX, value).apply();
+        try { Toast.makeText(this, R.string.fc_face_fix_restart, Toast.LENGTH_LONG).show(); } catch (Throwable ignored) {}
+    }
+
+    private boolean fcFaceFixEnabled() {
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(PREF_FC_FACE_FIX, true);
+    }
+
+    /**
+     * PES / Bomba Patch faces can turn into spikes in replays because of float overflow in
+     * the vector units. Stronger clamping (VU "Extra + Preserve Sign", EE/FPU "Extra") keeps
+     * those values in range. Applied before each boot; turning it off restores the defaults.
+     */
+    private void fcApplyAccuracyFix() {
+        boolean on = fcFaceFixEnabled();
+        String t = on ? "true" : "false";
+        String section = "EmuCore/CPU/Recompiler";
+        try {
+            NativeApp.setSetting(section, "vu0Overflow", "bool", "true");
+            NativeApp.setSetting(section, "vu0ExtraOverflow", "bool", t);
+            NativeApp.setSetting(section, "vu0SignOverflow", "bool", t);
+            NativeApp.setSetting(section, "vu1Overflow", "bool", "true");
+            NativeApp.setSetting(section, "vu1ExtraOverflow", "bool", t);
+            NativeApp.setSetting(section, "vu1SignOverflow", "bool", t);
+            NativeApp.setSetting(section, "fpuOverflow", "bool", "true");
+            NativeApp.setSetting(section, "fpuExtraOverflow", "bool", t);
+        } catch (Throwable ignored) {}
+    }
+    // endregion
+
     // region Futebol Mobile: modern button look (only the drawing changes, not positions or functions)
     private void applyFcLook() {
         fcStyleButton(R.id.btn_pad_x, kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_SQUARE, R.string.fc_label_shoot);
@@ -4426,9 +4523,81 @@ public class MainActivity extends AppCompatActivity {
         if (sel instanceof PSButtonView) ((PSButtonView) sel).setFcStyle(kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_NONE, "SELECT");
         View start = findViewById(R.id.btn_pad_start);
         if (start instanceof PSButtonView) ((PSButtonView) start).setFcStyle(kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_NONE, "START");
+        View toggle = findViewById(R.id.btn_fc_stick_toggle);
+        if (toggle instanceof PSButtonView) {
+            PSButtonView t = (PSButtonView) toggle;
+            t.setFcStyle(fcLeftDpad() ? kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_DPAD
+                    : kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_STICK, null);
+            t.setOnPSButtonListener(pressed -> {
+                if (!pressed) return;
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(PREF_FC_LEFT_DPAD, !fcLeftDpad()).apply();
+                fcApplyLeftControl();
+            });
+        }
         for (int id : new int[]{R.id.btn_pad_x, R.id.btn_pad_a, R.id.btn_pad_y, R.id.btn_pad_b, R.id.btn_pad_r1, R.id.btn_pad_l1}) {
             View v = findViewById(id);
             if (v != null) { v.setScaleX(1.0f); v.setScaleY(1.0f); }
+        }
+    }
+
+    private static final String PREF_FC_LEFT_DPAD = "fc_left_dpad";
+
+    private boolean fcLeftDpad() {
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(PREF_FC_LEFT_DPAD, false);
+    }
+
+    /** Football mode: show either the analog stick or the arrows in the bottom-left corner. */
+    private void fcApplyLeftControl() {
+        if (currentControllerMode != 3) return;
+        JoystickView stick = findViewById(R.id.joystick_left);
+        DPadView dpad = findViewById(R.id.dpad_view);
+        if (stick == null || dpad == null) return;
+        boolean useDpad = fcLeftDpad();
+        boolean controlsShown = llPadRight != null && llPadRight.getVisibility() == View.VISIBLE;
+
+        ViewGroup.LayoutParams raw = dpad.getLayoutParams();
+        if (raw instanceof androidx.constraintlayout.widget.ConstraintLayout.LayoutParams) {
+            androidx.constraintlayout.widget.ConstraintLayout.LayoutParams lp =
+                    (androidx.constraintlayout.widget.ConstraintLayout.LayoutParams) raw;
+            int size = getResources().getDimensionPixelSize(R.dimen.fc_stick_size);
+            lp.width = size;
+            lp.height = size;
+            lp.bottomToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET;
+            lp.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+            lp.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+            lp.leftMargin = getResources().getDimensionPixelSize(R.dimen.fc_stick_margin_start);
+            lp.setMarginStart(lp.leftMargin);
+            lp.bottomMargin = getResources().getDimensionPixelSize(R.dimen.fc_stick_margin_bottom);
+            dpad.setLayoutParams(lp);
+        }
+        dpad.setFcStyle(true);
+        if (controlsShown) {
+            stick.setVisibility(useDpad ? View.GONE : View.VISIBLE);
+            dpad.setVisibility(useDpad ? View.VISIBLE : View.GONE);
+        }
+        View toggle = findViewById(R.id.btn_fc_stick_toggle);
+        if (toggle instanceof PSButtonView) {
+            ((PSButtonView) toggle).setFcSymbol(useDpad ? kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_DPAD
+                    : kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_STICK);
+        }
+    }
+
+    /** Puts the d-pad back where the other controller modes expect it. */
+    private void fcRestoreDpadLayout(DPadView dpad) {
+        if (dpad == null) return;
+        dpad.setFcStyle(false);
+        ViewGroup.LayoutParams raw = dpad.getLayoutParams();
+        if (raw instanceof androidx.constraintlayout.widget.ConstraintLayout.LayoutParams) {
+            androidx.constraintlayout.widget.ConstraintLayout.LayoutParams lp =
+                    (androidx.constraintlayout.widget.ConstraintLayout.LayoutParams) raw;
+            if (lp.bottomToBottom == androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID) {
+                lp.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET;
+                lp.bottomToTop = R.id.joystick_left;
+                lp.leftMargin = dpToPx(20);
+                lp.setMarginStart(lp.leftMargin);
+                lp.bottomMargin = dpToPx(6);
+                dpad.setLayoutParams(lp);
+            }
         }
     }
 
@@ -4565,6 +4734,9 @@ public class MainActivity extends AppCompatActivity {
                 dpadView.setVisibility(vis);
             }
         }
+        if (visible && currentControllerMode == 3) {
+            fcApplyLeftControl();
+        }
         
         if (!visible) {
             hideDrawerToggle();
@@ -4649,11 +4821,11 @@ public class MainActivity extends AppCompatActivity {
         String message = "Android denied direct file access for:\n" + targetDir.getAbsolutePath() +
                 "\n\nGrant 'Allow access to all files' in system settings or choose a folder inside ARMSX2's storage.";
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
-            .setTitle("Permission required")
+            .setTitle("Permissão necessária")
             .setMessage(message)
             .setNegativeButton("OK", (d, w) -> d.dismiss());
         if (canGrant) {
-            builder.setPositiveButton("Open settings", (d, w) -> {
+            builder.setPositiveButton("Abrir configurações", (d, w) -> {
                 d.dismiss();
                 openAllFilesAccessSettings();
             });
@@ -4683,7 +4855,7 @@ public class MainActivity extends AppCompatActivity {
                     String name = queryOpenableDisplayName(uri);
                     String low = name != null ? name.toLowerCase() : uri.toString().toLowerCase();
                     if (!low.endsWith(".iso")) {
-                        try { new MaterialAlertDialogBuilder(this).setTitle("Not an ISO").setMessage("Please select a .iso file.").setPositiveButton("OK", (d,w)-> d.dismiss()).show(); } catch (Throwable ignored) {}
+                        try { new MaterialAlertDialogBuilder(this).setTitle("Não é uma ISO").setMessage("Escolha um arquivo .iso.").setPositiveButton("OK", (d,w)-> d.dismiss()).show(); } catch (Throwable ignored) {}
                         return;
                     }
                     performIsoToChd(uri, name);
@@ -5457,6 +5629,9 @@ public class MainActivity extends AppCompatActivity {
         if (!show && (currentControllerMode == 1 || currentControllerMode == 3)) {
             if (jr != null) jr.setVisibility(View.GONE);
             if (d != null) d.setVisibility(View.GONE);
+        }
+        if (!show && currentControllerMode == 3) {
+            fcApplyLeftControl();
         }
         try {
             if (show) {
