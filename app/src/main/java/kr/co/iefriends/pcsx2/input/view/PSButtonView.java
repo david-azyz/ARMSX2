@@ -39,6 +39,11 @@ public class PSButtonView extends View {
     private int fcSymbol;
     private String fcLabel;
 
+    public void setFcSymbol(int symbolType) {
+        fcSymbol = symbolType;
+        invalidate();
+    }
+
     public void setFcStyle(int symbolType, String label) {
         fcPainter = new FcButtonPainter();
         fcSymbol = symbolType;
