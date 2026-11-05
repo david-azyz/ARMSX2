@@ -2305,6 +2305,7 @@ public class MainActivity extends AppCompatActivity {
         setupDrawerSpinners();
         setupControllerModeSpinner();
         setupDrawerSwitches();
+        fcSetupAlphaSlider();
         Slider uiScaleSlider = findViewById(R.id.drawer_slider_ui_scale);
         TextView uiScaleValue = findViewById(R.id.drawer_ui_scale_value);
         if (uiScaleSlider != null) {
@@ -3201,6 +3202,40 @@ public class MainActivity extends AppCompatActivity {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit().putFloat(PREF_UI_SCALE_MULTIPLIER, value).apply();
     }
 
+    // region Futebol Mobile: on-screen controls transparency (20%..100%)
+    private static final String PREF_FC_ALPHA = "fc_controls_alpha";
+
+    private int fcControlsAlphaPercent() {
+        int v = getSharedPreferences(PREFS, MODE_PRIVATE).getInt(PREF_FC_ALPHA, 100);
+        return Math.max(20, Math.min(100, v));
+    }
+
+    private void fcSetupAlphaSlider() {
+        Slider slider = findViewById(R.id.drawer_slider_fc_alpha);
+        TextView label = findViewById(R.id.drawer_fc_alpha_value);
+        int current = fcControlsAlphaPercent();
+        if (label != null) label.setText(current + "%");
+        if (slider == null) return;
+        slider.setValue(current);
+        slider.addOnChangeListener((s, value, fromUser) -> {
+            int pct = Math.round(value);
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt(PREF_FC_ALPHA, pct).apply();
+            if (label != null) label.setText(pct + "%");
+            fcApplyControlsAlpha();
+        });
+    }
+
+    private void fcApplyControlsAlpha() {
+        float a = fcControlsAlphaPercent() / 100f;
+        int[] ids = {R.id.ll_pad_right, R.id.ll_pad_shoulders_left, R.id.ll_pad_shoulders_right,
+                R.id.ll_pad_select_start, R.id.joystick_left, R.id.joystick_right, R.id.dpad_view};
+        for (int id : ids) {
+            View v = findViewById(id);
+            if (v != null) v.setAlpha(a);
+        }
+    }
+    // endregion
+
     private void applyUserUiScale() {
         float multiplier = Math.max(ONSCREEN_UI_SCALE_MIN, Math.min(ONSCREEN_UI_SCALE_MAX, onScreenUiScaleMultiplier));
         onScreenUiScaleMultiplier = multiplier;
@@ -3220,6 +3255,7 @@ public class MainActivity extends AppCompatActivity {
         applyScaleWithPivot(joystickRight, multiplier, multiplier, 1f, 1f);
         DPadView dpadView = findViewById(R.id.dpad_view);
         applyScaleWithPivot(dpadView, multiplier, multiplier, 0f, 1f);
+        fcApplyControlsAlpha();
     }
 
     private void applyScaleWithPivot(View view, float scaleX, float scaleY, float pivotXF, float pivotYF) {
