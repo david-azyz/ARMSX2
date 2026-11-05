@@ -2306,6 +2306,8 @@ public class MainActivity extends AppCompatActivity {
         setupControllerModeSpinner();
         setupDrawerSwitches();
         fcSetupAlphaSlider();
+        View fcSizesBtn = findViewById(R.id.drawer_btn_fc_button_sizes);
+        if (fcSizesBtn != null) fcSizesBtn.setOnClickListener(v -> fcShowButtonSizesDialog());
         Slider uiScaleSlider = findViewById(R.id.drawer_slider_ui_scale);
         TextView uiScaleValue = findViewById(R.id.drawer_ui_scale_value);
         if (uiScaleSlider != null) {
@@ -3202,6 +3204,85 @@ public class MainActivity extends AppCompatActivity {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit().putFloat(PREF_UI_SCALE_MULTIPLIER, value).apply();
     }
 
+    // region Futebol Mobile: individual size for each on-screen button (50%..150%)
+    private static final int[] FC_SIZE_IDS = {
+            R.id.btn_pad_x, R.id.btn_pad_a, R.id.btn_pad_y, R.id.btn_pad_b, R.id.btn_pad_r1, R.id.btn_pad_l1,
+            R.id.joystick_left, R.id.btn_pad_l2, R.id.btn_pad_l3, R.id.btn_fc_stick_toggle,
+            R.id.btn_pad_r2, R.id.btn_pad_r3, R.id.btn_pad_select, R.id.btn_pad_start};
+    private static final String[] FC_SIZE_NAMES = {
+            "Chute (quadrado)", "Passe (X)", "Enfiada (triângulo)", "Cruzar (bola)", "Correr (R1)", "Trocar (L1)",
+            "Analógico / setas", "L2", "L3", "Botão analógico/setas", "R2", "R3", "Select", "Start"};
+
+    private int fcButtonScalePercent(int id) {
+        int v = getSharedPreferences(PREFS, MODE_PRIVATE).getInt("fc_size_" + getResources().getResourceEntryName(id), 100);
+        return Math.max(50, Math.min(150, v));
+    }
+
+    private void fcApplyButtonScales() {
+        if (!BuildConfig.GAME_MODE) return;
+        float global = Math.max(ONSCREEN_UI_SCALE_MIN, Math.min(ONSCREEN_UI_SCALE_MAX, onScreenUiScaleMultiplier));
+        for (int id : FC_SIZE_IDS) {
+            float own = fcButtonScalePercent(id) / 100f;
+            if (id == R.id.joystick_left) {
+                // The stick and the arrows share the same size setting and grow from the bottom-left corner.
+                JoystickView stick = findViewById(R.id.joystick_left);
+                if (stick != null && !stick.isFloating()) applyScaleWithPivot(stick, global * own, global * own, 0f, 1f);
+                applyScaleWithPivot(findViewById(R.id.dpad_view), global * own, global * own, 0f, 1f);
+                continue;
+            }
+            View v = findViewById(id);
+            if (v != null) {
+                v.setScaleX(own);
+                v.setScaleY(own);
+            }
+        }
+    }
+
+    private void fcShowButtonSizesDialog() {
+        android.widget.LinearLayout list = new android.widget.LinearLayout(this);
+        list.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int pad = dpToPx(20);
+        list.setPadding(pad, dpToPx(8), pad, 0);
+        final Slider[] sliders = new Slider[FC_SIZE_IDS.length];
+        for (int i = 0; i < FC_SIZE_IDS.length; i++) {
+            final int id = FC_SIZE_IDS[i];
+            final String name = FC_SIZE_NAMES[i];
+            final TextView label = new TextView(this);
+            label.setTextSize(14f);
+            label.setText(name + ": " + fcButtonScalePercent(id) + "%");
+            list.addView(label);
+            Slider slider = new Slider(this);
+            slider.setValueFrom(50f);
+            slider.setValueTo(150f);
+            slider.setStepSize(10f);
+            slider.setValue(fcButtonScalePercent(id));
+            slider.setLabelBehavior(com.google.android.material.slider.LabelFormatter.LABEL_GONE);
+            slider.addOnChangeListener((sl, value, fromUser) -> {
+                int pct = Math.round(value);
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                        .putInt("fc_size_" + getResources().getResourceEntryName(id), pct).apply();
+                label.setText(name + ": " + pct + "%");
+                fcApplyButtonScales();
+            });
+            sliders[i] = slider;
+            list.addView(slider);
+        }
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(list);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.fc_sizes_title)
+                .setView(scroll)
+                .setPositiveButton(R.string.fc_sizes_done, null)
+                .setNeutralButton(R.string.fc_sizes_reset, (d, w) -> {
+                    android.content.SharedPreferences.Editor e = getSharedPreferences(PREFS, MODE_PRIVATE).edit();
+                    for (int id : FC_SIZE_IDS) e.remove("fc_size_" + getResources().getResourceEntryName(id));
+                    e.apply();
+                    fcApplyButtonScales();
+                })
+                .show();
+    }
+    // endregion
+
     // region Futebol Mobile: on-screen controls transparency (20%..100%)
     private static final String PREF_FC_ALPHA = "fc_controls_alpha";
 
@@ -3256,6 +3337,7 @@ public class MainActivity extends AppCompatActivity {
         DPadView dpadView = findViewById(R.id.dpad_view);
         applyScaleWithPivot(dpadView, multiplier, multiplier, 0f, 1f);
         fcApplyControlsAlpha();
+        fcApplyButtonScales();
     }
 
     private void applyScaleWithPivot(View view, float scaleX, float scaleY, float pivotXF, float pivotYF) {
@@ -4565,6 +4647,7 @@ public class MainActivity extends AppCompatActivity {
             View v = findViewById(id);
             if (v != null) { v.setScaleX(1.0f); v.setScaleY(1.0f); }
         }
+        fcApplyButtonScales();
     }
 
     private static final String PREF_FC_LEFT_DPAD = "fc_left_dpad";
