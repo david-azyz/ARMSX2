@@ -9,7 +9,7 @@
 -->
 <resources>
     <!-- Nome que aparece embaixo do ícone no celular -->
-    <string name="fm_app_name" translatable="false">Futebol PS2</string>
+    <string name="fm_app_name" translatable="false">PathZz2</string>
 
     <!-- Rótulos dos botões (ataque). Ajuste se o seu jogo usar outra função. -->
     <string name="fc_label_shoot" translatable="false">CHUTE</string>
@@ -20,6 +20,14 @@
     <string name="fc_label_switch" translatable="false">TROCAR</string>
     <string name="fc_mode_name" translatable="false">Futebol (estilo mobile)</string>
     <string name="fc_scale_label" translatable="false">Tamanho dos controles</string>
+
+    <!-- Menu de pausa (botão voltar do celular) -->
+    <string name="fc_pause_title" translatable="false">Jogo pausado</string>
+    <string name="fc_pause_continue" translatable="false">Continuar</string>
+    <string name="fc_pause_exit" translatable="false">Sair do jogo</string>
+    <string name="fc_pause_options" translatable="false">Opções</string>
+    <string name="fc_pause_face_fix" translatable="false">Corrigir rosto dos jogadores no replay</string>
+    <string name="fc_face_fix_restart" translatable="false">A correção do rosto vale quando você abrir o jogo de novo.</string>
 
     <!-- Mensagens do modo jogo único -->
     <string name="fm_pick_iso" translatable="false">Escolha a ISO do jogo. Isso só é pedido na primeira vez.</string>
