@@ -98,6 +98,17 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias="0.5" />
 
+            <!-- Futebol Mobile: switches the left control between analog stick and arrows -->
+            <kr.co.iefriends.pcsx2.input.view.PSButtonView
+                android:id="@+id/btn_fc_stick_toggle"
+                android:layout_width="58dp"
+                android:layout_height="58dp"
+                android:layout_marginStart="10dp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@id/btn_pad_l3"
+                app:layout_constraintStart_toEndOf="@id/btn_pad_l3"
+                app:layout_constraintTop_toTopOf="@id/btn_pad_l3" />
+
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
