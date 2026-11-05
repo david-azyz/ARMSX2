@@ -55,7 +55,7 @@
                 android:id="@+id/per_game_spinner_aspect_ratio"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:entries="@array/aspect_ratios" />
+                android:entries="@array/aspect_ratios_display" />
 
             <com.google.android.material.materialswitch.MaterialSwitch
                 android:id="@+id/per_game_switch_widescreen"
