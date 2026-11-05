@@ -56,6 +56,14 @@ public class JoystickView extends View {
     private boolean floating = false;
     private float floatingRadiusPx = 0f;
     private float homeX, homeY;
+
+    // Futebol Mobile look (null = original look)
+    private FcButtonPainter fcPainter;
+
+    public void setFcStyle(boolean enabled) {
+        fcPainter = enabled ? new FcButtonPainter() : null;
+        invalidate();
+    }
     
     public interface OnJoystickMoveListener {
         void onJoystickMove(float x, float y);
@@ -182,6 +190,11 @@ public class JoystickView extends View {
     }
 
     private void drawStick(Canvas canvas) {
+        if (fcPainter != null) {
+            fcPainter.drawStickBase(canvas, centerX, centerY, baseRadius, isDragging);
+            fcPainter.drawStickKnob(canvas, knobPosition.x, knobPosition.y, knobRadius * knobScaleFactor * 1.4f);
+            return;
+        }
         if (baseDrawable != null) {
             baseDrawable.draw(canvas);
         } else {
@@ -261,7 +274,7 @@ public class JoystickView extends View {
         float dx = x - centerX;
         float dy = y - centerY;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
-        float knobVisualRadius = knobRadius * knobScaleFactor;
+        float knobVisualRadius = knobRadius * knobScaleFactor * (fcPainter != null ? 1.4f : 1f);
         float maxDistance = Math.max(0f, baseRadius - knobVisualRadius);
         if (distance <= maxDistance) {
             knobPosition.set(x, y);
