@@ -710,7 +710,7 @@ public class SettingsActivity extends AppCompatActivity {
 		}
 
 		Spinner spAspectRatio = findViewById(R.id.sp_aspect_ratio);
-		ArrayAdapter<CharSequence> aspectAdapter = ArrayAdapter.createFromResource(this, R.array.aspect_ratios, android.R.layout.simple_spinner_item);
+		ArrayAdapter<CharSequence> aspectAdapter = ArrayAdapter.createFromResource(this, R.array.aspect_ratios_display, android.R.layout.simple_spinner_item);
 		aspectAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		spAspectRatio.setAdapter(aspectAdapter);
 		final String[] aspectChoices = getResources().getStringArray(R.array.aspect_ratios);
