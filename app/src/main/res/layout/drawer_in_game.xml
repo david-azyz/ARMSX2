@@ -216,6 +216,15 @@
             app:labelBehavior="gone"
             app:tickVisible="false" />
 
+        <!-- Futebol Mobile: opens the per-button size dialog -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/drawer_btn_fc_button_sizes"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="@string/fc_sizes_button" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
