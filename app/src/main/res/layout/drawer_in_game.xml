@@ -269,7 +269,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:text="Change Discs"
+            android:text="Trocar disco"
             android:textAllCaps="false"
             android:textColor="?attr/colorOnSurface"
             app:icon="@drawable/ic_folder_24"
