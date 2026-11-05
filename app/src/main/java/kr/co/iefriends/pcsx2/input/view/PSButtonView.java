@@ -33,6 +33,18 @@ public class PSButtonView extends View {
     }
     
     private OnPSButtonListener listener;
+
+    // Futebol Mobile look (null = original look)
+    private FcButtonPainter fcPainter;
+    private int fcSymbol;
+    private String fcLabel;
+
+    public void setFcStyle(int symbolType, String label) {
+        fcPainter = new FcButtonPainter();
+        fcSymbol = symbolType;
+        fcLabel = label;
+        invalidate();
+    }
     
     public PSButtonView(Context context) {
         super(context);
@@ -84,6 +96,10 @@ public class PSButtonView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (fcPainter != null) {
+            fcPainter.draw(canvas, getWidth(), getHeight(), isPressed, fcSymbol, null, fcLabel);
+            return;
+        }
 
         float centerX = bounds.centerX();
         float centerY = bounds.centerY();
