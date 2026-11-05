@@ -8,73 +8,73 @@
     </string-array>
 
     <string-array name="gpu_profile_override">
-        <item>Auto (Recommended)</item>
-        <item>Force Mali</item>
-        <item>Force Adreno</item>
+        <item>Automático (recomendado)</item>
+        <item>Forçar Mali</item>
+        <item>Forçar Adreno</item>
     </string-array>
 
     <string-array name="texture_filtering">
-        <item>PS2 (default)</item>
-        <item>Forced</item>
-        <item>Nearest</item>
+        <item>PS2 (padrão)</item>
+        <item>Forçado</item>
+        <item>Mais próximo</item>
     </string-array>
 
     <string-array name="interlace_modes">
-        <item>Automatic</item>
-        <item>Off</item>
+        <item>Automático</item>
+        <item>Desligado</item>
         <item>Weave TFF</item>
         <item>Weave BFF</item>
         <item>Bob TFF</item>
         <item>Bob BFF</item>
         <item>Blend TFF</item>
         <item>Blend BFF</item>
-        <item>Adaptive TFF</item>
-        <item>Adaptive BFF</item>
+        <item>Adaptativo TFF</item>
+        <item>Adaptativo BFF</item>
     </string-array>
 
     <string-array name="cas_modes">
-        <item>None (Default)</item>
-        <item>Sharpen Only (Internal)</item>
-        <item>Sharpen and Resize (Display)</item>
+        <item>Nenhum (padrão)</item>
+        <item>Só nitidez (interno)</item>
+        <item>Nitidez e redimensionar (tela)</item>
     </string-array>
 
     <string-array name="texture_preloading">
-        <item>Off</item>
-        <item>Partial</item>
-        <item>Full</item>
+        <item>Desligado</item>
+        <item>Parcial</item>
+        <item>Completo</item>
     </string-array>
 
     <string-array name="bilinear_present">
-        <item>Off</item>
-        <item>Bilinear (Smooth)</item>
-        <item>Bilinear (Sharp)</item>
+        <item>Desligado</item>
+        <item>Bilinear (suave)</item>
+        <item>Bilinear (nítido)</item>
     </string-array>
 
     <string-array name="trilinear_filtering">
-        <item>Automatic</item>
-        <item>Off</item>
+        <item>Automático</item>
+        <item>Desligado</item>
         <item>PS2</item>
-        <item>Forced</item>
+        <item>Forçado</item>
     </string-array>
 
     <string-array name="dithering_modes">
-        <item>Off</item>
-        <item>Scaled</item>
-        <item>Unscaled (Default)</item>
-        <item>Force 32-bit</item>
+        <item>Desligado</item>
+        <item>Ajustado à escala</item>
+        <item>Sem escala (padrão)</item>
+        <item>Forçar 32 bits</item>
     </string-array>
 
     <string-array name="acc_blending">
-        <item>Minimum</item>
-        <item>Basic</item>
-        <item>Medium</item>
-        <item>High</item>
-        <item>Full</item>
-        <item>Maximum</item>
+        <item>Mínima</item>
+        <item>Básica</item>
+        <item>Média</item>
+        <item>Alta</item>
+        <item>Completa</item>
+        <item>Máxima</item>
     </string-array>
 
     <string-array name="anisotropic">
-        <item>Off</item>
+        <item>Desligado</item>
         <item>2x</item>
         <item>4x</item>
         <item>8x</item>
@@ -83,6 +83,15 @@
 
     <string-array name="aspect_ratios">
         <item>Stretch</item>
+        <item>Auto 4:3/3:2</item>
+        <item>4:3</item>
+        <item>16:9</item>
+        <item>10:7</item>
+    </string-array>
+
+    <!-- Display labels for aspect_ratios (same order). aspect_ratios stays in English: it is the saved setting value. -->
+    <string-array name="aspect_ratios_display">
+        <item>Esticar</item>
         <item>Auto 4:3/3:2</item>
         <item>4:3</item>
         <item>16:9</item>
@@ -104,14 +113,14 @@
     </string-array>
 
     <string-array name="auto_flush_hw">
-        <item>Disabled</item>
-        <item>Sprites Only</item>
-        <item>Enabled</item>
+        <item>Desligado</item>
+        <item>Só sprites</item>
+        <item>Ligado</item>
     </string-array>
 
     <string-array name="cpu_cores_basic">
-        <item>Translator (default)</item>
-        <item>Interpreter</item>
+        <item>Tradutor (padrão)</item>
+        <item>Interpretador</item>
     </string-array>
 
     <string-array name="network_ethapi">
