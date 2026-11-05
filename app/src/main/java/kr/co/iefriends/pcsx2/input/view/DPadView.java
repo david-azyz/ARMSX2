@@ -66,6 +66,15 @@ public class DPadView extends View {
     }
     
     private OnDPadListener listener;
+
+    // Futebol Mobile look: four separate glowing keys, no circle (null = original look)
+    private FcButtonPainter fcPainter;
+    private final RectF fcKey = new RectF();
+
+    public void setFcStyle(boolean enabled) {
+        fcPainter = enabled ? new FcButtonPainter() : null;
+        invalidate();
+    }
     
     public DPadView(Context context) {
         super(context);
@@ -223,6 +232,22 @@ public class DPadView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (fcPainter != null) {
+            float size = Math.min(getWidth(), getHeight());
+            float cx = getWidth() / 2f, cy = getHeight() / 2f;
+            float half = size * 0.5f - size * 0.06f; // leave room for the glow
+            float w = size * 0.15f;                  // half width of a key
+            float gap = size * 0.07f;                // space between keys and the center
+            fcKey.set(cx - w, cy - half, cx + w, cy - gap);
+            fcPainter.drawDpadKey(canvas, fcKey, upPressed, 0);
+            fcKey.set(cx - w, cy + gap, cx + w, cy + half);
+            fcPainter.drawDpadKey(canvas, fcKey, downPressed, 2);
+            fcKey.set(cx - half, cy - w, cx - gap, cy + w);
+            fcPainter.drawDpadKey(canvas, fcKey, leftPressed, 3);
+            fcKey.set(cx + gap, cy - w, cx + half, cy + w);
+            fcPainter.drawDpadKey(canvas, fcKey, rightPressed, 1);
+            return;
+        }
         boolean hasDirectionalIcons = upDrawable != null || downDrawable != null || leftDrawable != null || rightDrawable != null;
 
         if (baseDrawable != null) {
@@ -304,6 +329,18 @@ public class DPadView extends View {
         boolean newDown = downRegion.contains(x, y);
         boolean newLeft = leftRegion.contains(x, y);
         boolean newRight = rightRegion.contains(x, y);
+        if (fcPainter != null) {
+            // 8 directions by angle, so diagonals (e.g. up + right) work anywhere on the pad.
+            float dx = x - getWidth() / 2f;
+            float dy = y - getHeight() / 2f;
+            float dead = Math.min(getWidth(), getHeight()) * 0.08f;
+            float ax = Math.abs(dx), ay = Math.abs(dy);
+            boolean active = (dx * dx + dy * dy) > dead * dead;
+            newUp = active && dy < 0 && ax < ay * 2.414f;
+            newDown = active && dy > 0 && ax < ay * 2.414f;
+            newLeft = active && dx < 0 && ay < ax * 2.414f;
+            newRight = active && dx > 0 && ay < ax * 2.414f;
+        }
         
         if (upPressed != newUp) {
             upPressed = newUp;
