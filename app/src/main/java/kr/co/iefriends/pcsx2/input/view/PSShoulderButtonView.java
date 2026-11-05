@@ -31,6 +31,18 @@ public class PSShoulderButtonView extends View {
     }
     
     private OnPSShoulderButtonListener listener;
+
+    // Futebol Mobile look (null = original look)
+    private FcButtonPainter fcPainter;
+    private String fcSymbolText;
+    private String fcLabel;
+
+    public void setFcStyle(String symbolText, String label) {
+        fcPainter = new FcButtonPainter();
+        fcSymbolText = symbolText;
+        fcLabel = label;
+        invalidate();
+    }
     
     public PSShoulderButtonView(Context context) {
         super(context);
@@ -83,6 +95,10 @@ public class PSShoulderButtonView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (fcPainter != null) {
+            fcPainter.draw(canvas, getWidth(), getHeight(), isPressed, FcButtonPainter.SYMBOL_NONE, fcSymbolText, fcLabel);
+            return;
+        }
 
         if (iconDrawable != null) {
             iconDrawable.setBounds(
