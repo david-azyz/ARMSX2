@@ -21,6 +21,10 @@
     <string name="fc_mode_name" translatable="false">Futebol (estilo mobile)</string>
     <string name="fc_scale_label" translatable="false">Tamanho dos controles</string>
     <string name="fc_alpha_label" translatable="false">Transparência dos controles</string>
+    <string name="fc_sizes_button" translatable="false">Tamanho de cada botão</string>
+    <string name="fc_sizes_title" translatable="false">Tamanho de cada botão</string>
+    <string name="fc_sizes_reset" translatable="false">Restaurar</string>
+    <string name="fc_sizes_done" translatable="false">Pronto</string>
 
     <!-- Menu de pausa (botão voltar do celular) -->
     <string name="fc_pause_title" translatable="false">Jogo pausado</string>
