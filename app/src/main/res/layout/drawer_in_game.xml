@@ -225,6 +225,15 @@
             android:layout_marginBottom="16dp"
             android:text="@string/fc_sizes_button" />
 
+        <!-- Futebol Mobile: drag the on-screen controls around -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/drawer_btn_fc_move"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="@string/fc_move_button" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
