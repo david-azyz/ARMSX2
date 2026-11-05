@@ -25,6 +25,10 @@
     <string name="fc_sizes_title" translatable="false">Tamanho de cada botão</string>
     <string name="fc_sizes_reset" translatable="false">Restaurar</string>
     <string name="fc_sizes_done" translatable="false">Pronto</string>
+    <string name="fc_move_button" translatable="false">Mover controles</string>
+    <string name="fc_move_hint" translatable="false">Arraste os controles para onde quiser</string>
+    <string name="fc_move_reset" translatable="false">Restaurar</string>
+    <string name="fc_move_done" translatable="false">Concluir</string>
 
     <!-- Menu de pausa (botão voltar do celular) -->
     <string name="fc_pause_title" translatable="false">Jogo pausado</string>
