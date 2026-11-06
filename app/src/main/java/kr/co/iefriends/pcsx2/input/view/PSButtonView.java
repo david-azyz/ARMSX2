@@ -46,6 +46,107 @@ public class PSButtonView extends View {
         invalidate();
     }
 
+    // PathZz2 compact controls: what the button shows while defending, and swipe hints.
+    private int fcSymbolDefense = -1;
+    private String fcSymbolTextDefense;
+    private String fcHint;
+    private String fcHintDefense;
+
+    public void setFcDefenseSymbol(int symbolType, String symbolText) {
+        fcSymbolDefense = symbolType;
+        fcSymbolTextDefense = symbolText;
+        invalidate();
+    }
+
+    public void setFcHints(String attackHint, String defenseHint) {
+        fcHint = attackHint;
+        fcHintDefense = defenseHint;
+        invalidate();
+    }
+
+    /**
+     * Tap/hold = primary action, quick drag of the finger = second action (like eFootball).
+     * When set, it replaces the normal press listener.
+     */
+    public interface FcGesture {
+        void onPrimary(boolean pressed);
+        void onSwipe(boolean pressed);
+        boolean swipeEnabled();
+    }
+
+    private FcGesture fcGesture;
+    private int fcGestureState = 0; // 0 idle, 1 undecided, 2 primary, 3 swipe
+    private float fcDownX, fcDownY;
+    private final Runnable fcHoldDecide = () -> {
+        if (fcGestureState == 1 && fcGesture != null) {
+            fcGestureState = 2;
+            fcGesture.onPrimary(true);
+        }
+    };
+
+    public void setFcGesture(FcGesture gesture) {
+        if (gesture == fcGesture) return;
+        removeCallbacks(fcHoldDecide);
+        fcGestureState = 0;
+        fcGesture = gesture;
+    }
+
+    private boolean fcGestureTouch(MotionEvent event) {
+        final FcGesture g = fcGesture;
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN: {
+                float dx = event.getX() - getWidth() / 2f;
+                float dy = event.getY() - getHeight() / 2f;
+                float radius = Math.min(getWidth(), getHeight()) / 2f;
+                if (dx * dx + dy * dy > radius * radius) return false;
+                isPressed = true;
+                invalidate();
+                fcDownX = event.getX();
+                fcDownY = event.getY();
+                if (g.swipeEnabled()) {
+                    fcGestureState = 1;
+                    postDelayed(fcHoldDecide, 110);
+                } else {
+                    fcGestureState = 2;
+                    g.onPrimary(true);
+                }
+                return true;
+            }
+            case MotionEvent.ACTION_MOVE:
+                if (fcGestureState == 1) {
+                    float mx = event.getX() - fcDownX;
+                    float my = event.getY() - fcDownY;
+                    float limit = Math.min(getWidth(), getHeight()) * 0.22f;
+                    if (mx * mx + my * my > limit * limit) {
+                        removeCallbacks(fcHoldDecide);
+                        fcGestureState = 3;
+                        g.onSwipe(true);
+                    }
+                }
+                return fcGestureState != 0;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL: {
+                removeCallbacks(fcHoldDecide);
+                int state = fcGestureState;
+                fcGestureState = 0;
+                if (state == 0) return false;
+                isPressed = false;
+                invalidate();
+                if (state == 1) {
+                    // Quick tap: press now and let go a moment later so the game sees it.
+                    g.onPrimary(true);
+                    postDelayed(() -> g.onPrimary(false), 70);
+                } else if (state == 2) {
+                    g.onPrimary(false);
+                } else {
+                    postDelayed(() -> g.onSwipe(false), 70);
+                }
+                return true;
+            }
+        }
+        return fcGestureState != 0;
+    }
+
     public void setFcSymbol(int symbolType) {
         fcSymbol = symbolType;
         invalidate();
@@ -109,8 +210,12 @@ public class PSButtonView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (fcPainter != null) {
-            fcPainter.draw(canvas, getWidth(), getHeight(), isPressed, fcSymbol, null,
-                    FcButtonPainter.isDefense() && fcLabelDefense != null ? fcLabelDefense : fcLabel);
+            boolean def = FcButtonPainter.isDefense();
+            int sym = def && fcSymbolDefense >= 0 ? fcSymbolDefense : fcSymbol;
+            String symText = def ? fcSymbolTextDefense : null;
+            String label = def && fcLabelDefense != null ? fcLabelDefense : fcLabel;
+            String hint = def ? fcHintDefense : fcHint;
+            fcPainter.draw(canvas, getWidth(), getHeight(), isPressed, sym, symText, label, hint);
             return;
         }
 
@@ -222,6 +327,9 @@ public class PSButtonView extends View {
     
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (fcGesture != null) {
+            return fcGestureTouch(event);
+        }
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 boolean hitTest;
