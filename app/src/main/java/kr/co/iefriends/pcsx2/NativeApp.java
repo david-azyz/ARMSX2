@@ -96,6 +96,11 @@ public class NativeApp {
 	public static native String getGameSerial();
 	public static native int getGameCRC();
 	public static native void reloadCheats();
+	// PathZz2: ball possession detector (EE RAM scan)
+	public static native void possScanReset();
+	public static native int possScanStep(int which);
+	public static native long[] possScanResults(int max);
+	public static native int readEeByte(int addr);
 	public static native boolean hasWidescreenPatch();
 	public static native float getFPS();
 
