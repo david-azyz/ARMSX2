@@ -23,6 +23,12 @@
     <string name="fc_label_def_pass" translatable="false">PRESSIONAR</string>
     <string name="fc_label_def_through" translatable="false">GOLEIRO</string>
     <string name="fc_label_def_cross" translatable="false">CARRINHO</string>
+    <!-- Controle enxuto (4 botões, deslizar = segunda função) -->
+    <string name="fc_compact_on" translatable="false">Usar controle enxuto (4 botões)</string>
+    <string name="fc_compact_off" translatable="false">Usar controle completo (6 botões)</string>
+    <string name="fc_hint_cross" translatable="false">deslize: CRUZAR</string>
+    <string name="fc_hint_press" translatable="false">deslize: CERCAR</string>
+    <string name="fc_hint_keeper" translatable="false">deslize: GOLEIRO</string>
     <!-- Detector de posse de bola -->
     <string name="fc_poss_button" translatable="false">Posse de bola (ataque/defesa)</string>
     <string name="fc_poss_detect" translatable="false">Detectar posse de bola</string>
