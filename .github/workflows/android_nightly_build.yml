@@ -44,7 +44,7 @@ jobs:
           KS_B64: ${{ secrets.PATHZZ2_KEYSTORE_BASE64 }}
         run: |
           if [ -n "$KS_B64" ]; then
-            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/pathzz2.keystore"
+            echo "$KS_B64" | tr -cd 'A-Za-z0-9+/=' | base64 -d > "$RUNNER_TEMP/pathzz2.keystore"
             echo "PATHZZ2_KEYSTORE_FILE=$RUNNER_TEMP/pathzz2.keystore" >> "$GITHUB_ENV"
           fi
 
