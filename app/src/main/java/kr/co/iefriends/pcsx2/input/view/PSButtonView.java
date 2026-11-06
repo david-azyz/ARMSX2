@@ -38,6 +38,13 @@ public class PSButtonView extends View {
     private FcButtonPainter fcPainter;
     private int fcSymbol;
     private String fcLabel;
+    private String fcLabelDefense;
+
+    /** Name shown while defending (null = same as the attack name). */
+    public void setFcDefenseLabel(String label) {
+        fcLabelDefense = label;
+        invalidate();
+    }
 
     public void setFcSymbol(int symbolType) {
         fcSymbol = symbolType;
@@ -102,7 +109,8 @@ public class PSButtonView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (fcPainter != null) {
-            fcPainter.draw(canvas, getWidth(), getHeight(), isPressed, fcSymbol, null, fcLabel);
+            fcPainter.draw(canvas, getWidth(), getHeight(), isPressed, fcSymbol, null,
+                    FcButtonPainter.isDefense() && fcLabelDefense != null ? fcLabelDefense : fcLabel);
             return;
         }
 
