@@ -2310,6 +2310,17 @@ public class MainActivity extends AppCompatActivity {
         if (fcSizesBtn != null) fcSizesBtn.setOnClickListener(v -> fcShowButtonSizesDialog());
         View fcMoveBtn = findViewById(R.id.drawer_btn_fc_move);
         if (fcMoveBtn != null) fcMoveBtn.setOnClickListener(v -> fcEnterMoveMode());
+        View fcVisibleBtn = findViewById(R.id.drawer_btn_fc_visible);
+        if (fcVisibleBtn != null) fcVisibleBtn.setOnClickListener(v -> fcShowVisibleDialog());
+        MaterialSwitch fcAutoHide = findViewById(R.id.drawer_sw_fc_autohide);
+        if (fcAutoHide != null) {
+            fcAutoHide.setChecked(getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(PREF_FC_AUTO_HIDE, false));
+            fcAutoHide.setOnCheckedChangeListener((b, checked) -> {
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(PREF_FC_AUTO_HIDE, checked).apply();
+                loadHideTimeoutFromPrefs();
+                setOnScreenControlsVisible(true);
+            });
+        }
         Slider uiScaleSlider = findViewById(R.id.drawer_slider_ui_scale);
         TextView uiScaleValue = findViewById(R.id.drawer_ui_scale_value);
         if (uiScaleSlider != null) {
@@ -3456,6 +3467,210 @@ public class MainActivity extends AppCompatActivity {
             isVmPaused = false;
             updatePauseButtonIcon();
         }
+    }
+    // endregion
+
+    // region PathZz2: modern pause screen
+    private androidx.appcompat.app.AlertDialog fcBuildPauseDialog(boolean[] faceFix, boolean faceFixBefore, Runnable resume) {
+        final int green = 0xFF3DF29A;
+        android.widget.LinearLayout card = new android.widget.LinearLayout(this);
+        card.setOrientation(android.widget.LinearLayout.VERTICAL);
+        card.setPadding(dpToPx(22), dpToPx(18), dpToPx(22), dpToPx(18));
+        android.graphics.drawable.GradientDrawable cardBg = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0xF20E2018, 0xF5060E0B});
+        cardBg.setCornerRadius(dpToPx(24));
+        cardBg.setStroke(dpToPx(2), 0x8C3DF29A);
+        card.setBackground(cardBg);
+
+        // Header: pause icon + title + subtitle
+        android.widget.LinearLayout head = new android.widget.LinearLayout(this);
+        head.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        head.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        android.widget.LinearLayout icon = new android.widget.LinearLayout(this);
+        icon.setGravity(android.view.Gravity.CENTER);
+        android.graphics.drawable.GradientDrawable iconBg = new android.graphics.drawable.GradientDrawable();
+        iconBg.setCornerRadius(dpToPx(10));
+        iconBg.setStroke(dpToPx(2), green);
+        icon.setBackground(iconBg);
+        for (int i = 0; i < 2; i++) {
+            View bar = new View(this);
+            android.graphics.drawable.GradientDrawable barBg = new android.graphics.drawable.GradientDrawable();
+            barBg.setColor(green);
+            barBg.setCornerRadius(dpToPx(2));
+            bar.setBackground(barBg);
+            android.widget.LinearLayout.LayoutParams blp = new android.widget.LinearLayout.LayoutParams(dpToPx(4), dpToPx(14));
+            blp.setMargins(dpToPx(2), 0, dpToPx(2), 0);
+            icon.addView(bar, blp);
+        }
+        head.addView(icon, new android.widget.LinearLayout.LayoutParams(dpToPx(38), dpToPx(38)));
+        android.widget.LinearLayout titles = new android.widget.LinearLayout(this);
+        titles.setOrientation(android.widget.LinearLayout.VERTICAL);
+        titles.setPadding(dpToPx(12), 0, 0, 0);
+        TextView title = new TextView(this);
+        title.setText(R.string.fc_pause_title);
+        title.setTextColor(0xFFFFFFFF);
+        title.setTextSize(20f);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        titles.addView(title);
+        TextView sub = new TextView(this);
+        sub.setText(R.string.fc_pause_subtitle);
+        sub.setTextColor(0xFF9DB3A8);
+        sub.setTextSize(12f);
+        titles.addView(sub);
+        head.addView(titles);
+        card.addView(head);
+
+        final androidx.appcompat.app.AlertDialog[] holder = new androidx.appcompat.app.AlertDialog[1];
+        TextView cont = fcPauseButton("▶  " + getString(R.string.fc_pause_continue), 0, 0, 0xFF04140C, true);
+        cont.setOnClickListener(v -> {
+            fcSaveFaceFix(faceFix[0], faceFixBefore);
+            holder[0].setOnCancelListener(null);
+            holder[0].dismiss();
+            resume.run();
+        });
+        card.addView(cont, fcPauseButtonParams(14));
+        TextView opts = fcPauseButton("⚙  " + getString(R.string.fc_pause_options), 0x0DFFFFFF, 0x733DF29A, 0xFFFFFFFF, false);
+        opts.setOnClickListener(v -> {
+            fcSaveFaceFix(faceFix[0], faceFixBefore);
+            holder[0].setOnCancelListener(null);
+            holder[0].dismiss();
+            if (inGameDrawer != null) {
+                setOnScreenControlsVisible(true);
+                inGameDrawer.openDrawer(GravityCompat.START);
+            }
+            resume.run();
+        });
+        card.addView(opts, fcPauseButtonParams(8));
+        TextView exit = fcPauseButton("⏻  " + getString(R.string.fc_pause_exit), 0x0FFF5050, 0x8CFF6B6B, 0xFFFF8C8C, false);
+        exit.setOnClickListener(v -> {
+            fcSaveFaceFix(faceFix[0], faceFixBefore);
+            holder[0].setOnCancelListener(null);
+            holder[0].dismiss();
+            shutdownVmToHome();
+        });
+        card.addView(exit, fcPauseButtonParams(8));
+
+        // Face fix switch row
+        android.widget.LinearLayout row = new android.widget.LinearLayout(this);
+        row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setPadding(dpToPx(12), dpToPx(4), dpToPx(4), dpToPx(4));
+        android.graphics.drawable.GradientDrawable rowBg = new android.graphics.drawable.GradientDrawable();
+        rowBg.setColor(0x0AFFFFFF);
+        rowBg.setCornerRadius(dpToPx(14));
+        row.setBackground(rowBg);
+        TextView fixLabel = new TextView(this);
+        fixLabel.setText(R.string.fc_pause_face_fix);
+        fixLabel.setTextColor(0xFFD6E4DC);
+        fixLabel.setTextSize(13f);
+        row.addView(fixLabel, new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        MaterialSwitch fixSwitch = new MaterialSwitch(this);
+        fixSwitch.setChecked(faceFix[0]);
+        int[][] states = {new int[]{android.R.attr.state_checked}, new int[]{}};
+        fixSwitch.setTrackTintList(new android.content.res.ColorStateList(states, new int[]{green, 0xFF39424A}));
+        fixSwitch.setThumbTintList(new android.content.res.ColorStateList(states, new int[]{0xFF04140C, 0xFFB8C7C0}));
+        fixSwitch.setOnCheckedChangeListener((b, checked) -> faceFix[0] = checked);
+        row.addView(fixSwitch);
+        card.addView(row, fcPauseButtonParams(14));
+
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(card);
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(scroll)
+                .setOnCancelListener(d -> {
+                    fcSaveFaceFix(faceFix[0], faceFixBefore);
+                    resume.run();
+                })
+                .create();
+        holder[0] = dialog;
+        dialog.setOnShowListener(d -> {
+            android.view.Window w = dialog.getWindow();
+            if (w != null) {
+                w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                w.setLayout(Math.min(dpToPx(400), getResources().getDisplayMetrics().widthPixels - dpToPx(32)),
+                        ViewGroup.LayoutParams.WRAP_CONTENT);
+                w.setDimAmount(0.75f);
+            }
+        });
+        return dialog;
+    }
+
+    private TextView fcPauseButton(String text, int fill, int stroke, int textColor, boolean primary) {
+        TextView b = new TextView(this);
+        b.setText(text);
+        b.setTextColor(textColor);
+        b.setTextSize(15f);
+        b.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        b.setAllCaps(true);
+        b.setLetterSpacing(0.04f);
+        b.setGravity(android.view.Gravity.CENTER);
+        android.graphics.drawable.GradientDrawable bg;
+        if (primary) {
+            bg = new android.graphics.drawable.GradientDrawable(
+                    android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0xFF3DF29A, 0xFF1FBF73});
+        } else {
+            bg = new android.graphics.drawable.GradientDrawable();
+            bg.setColor(fill);
+            bg.setStroke(dpToPx(1), stroke);
+        }
+        bg.setCornerRadius(dpToPx(14));
+        android.content.res.ColorStateList ripple = android.content.res.ColorStateList.valueOf(0x33FFFFFF);
+        b.setBackground(new android.graphics.drawable.RippleDrawable(ripple, bg, null));
+        b.setClickable(true);
+        b.setFocusable(true);
+        return b;
+    }
+
+    private android.widget.LinearLayout.LayoutParams fcPauseButtonParams(int topDp) {
+        android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(46));
+        lp.topMargin = dpToPx(topDp);
+        return lp;
+    }
+    // endregion
+
+    // region PathZz2: show or hide each on-screen button
+    private static final String PREF_FC_AUTO_HIDE = "fc_auto_hide";
+
+    private String fcHiddenKey(int id) {
+        return "fc_hidden_" + getResources().getResourceEntryName(id);
+    }
+
+    /** Hides the buttons the player turned off. Runs after the code that shows the controls. */
+    private void fcApplyHidden() {
+        if (!BuildConfig.GAME_MODE || currentControllerMode != 3) return;
+        android.content.SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
+        for (int id : FC_SIZE_IDS) {
+            boolean hidden = sp.getBoolean(fcHiddenKey(id), false);
+            if (id == R.id.joystick_left) {
+                if (hidden) {
+                    View stick = findViewById(R.id.joystick_left);
+                    View dpad = findViewById(R.id.dpad_view);
+                    if (stick != null) stick.setVisibility(View.GONE);
+                    if (dpad != null) dpad.setVisibility(View.GONE);
+                }
+                continue;
+            }
+            View v = findViewById(id);
+            if (v != null) v.setVisibility(hidden ? View.INVISIBLE : View.VISIBLE);
+        }
+    }
+
+    private void fcShowVisibleDialog() {
+        closeInGameDrawer();
+        final android.content.SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
+        final boolean[] shown = new boolean[FC_SIZE_IDS.length];
+        for (int i = 0; i < FC_SIZE_IDS.length; i++) shown[i] = !sp.getBoolean(fcHiddenKey(FC_SIZE_IDS[i]), false);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.fc_visible_title)
+                .setMultiChoiceItems(FC_SIZE_NAMES, shown, (d, which, checked) -> {
+                    shown[which] = checked;
+                    sp.edit().putBoolean(fcHiddenKey(FC_SIZE_IDS[which]), !checked).apply();
+                    fcApplyLeftControl();
+                    fcApplyHidden();
+                })
+                .setPositiveButton(R.string.fc_visible_done, (d, w) -> d.dismiss())
+                .show();
     }
     // endregion
 
@@ -4745,31 +4960,8 @@ public class MainActivity extends AppCompatActivity {
                 updatePauseButtonIcon();
             }
         };
-        fcPauseDialog = new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.fc_pause_title)
-                .setMultiChoiceItems(new CharSequence[]{getString(R.string.fc_pause_face_fix)}, faceFix,
-                        (dialog, which, isChecked) -> faceFix[0] = isChecked)
-                .setPositiveButton(R.string.fc_pause_continue, (dialog, which) -> {
-                    fcSaveFaceFix(faceFix[0], faceFixBefore);
-                    resume.run();
-                })
-                .setNegativeButton(R.string.fc_pause_exit, (dialog, which) -> {
-                    fcSaveFaceFix(faceFix[0], faceFixBefore);
-                    shutdownVmToHome();
-                })
-                .setNeutralButton(R.string.fc_pause_options, (dialog, which) -> {
-                    fcSaveFaceFix(faceFix[0], faceFixBefore);
-                    if (inGameDrawer != null) {
-                        setOnScreenControlsVisible(true);
-                        inGameDrawer.openDrawer(GravityCompat.START);
-                    }
-                    resume.run();
-                })
-                .setOnCancelListener(dialog -> {
-                    fcSaveFaceFix(faceFix[0], faceFixBefore);
-                    resume.run();
-                })
-                .show();
+        fcPauseDialog = fcBuildPauseDialog(faceFix, faceFixBefore, resume);
+        fcPauseDialog.show();
     }
 
     private void fcSaveFaceFix(boolean value, boolean before) {
@@ -4791,6 +4983,10 @@ public class MainActivity extends AppCompatActivity {
         boolean on = fcFaceFixEnabled();
         try {
             NativeApp.setSetting("EmuCore/CPU/Recompiler", "EnableVU0", "bool", on ? "false" : "true");
+        } catch (Throwable ignored) {}
+        // PathZz2: hide the English warnings in the top-left corner (OSD messages).
+        try {
+            NativeApp.setSetting("EmuCore/GS", "OsdMessagesPos", "int", "0");
         } catch (Throwable ignored) {}
     }
     // endregion
@@ -4832,6 +5028,7 @@ public class MainActivity extends AppCompatActivity {
         fcExpandContainers();
         fcApplyButtonOffsets();
         fcInstallDragHandlers();
+        fcApplyHidden();
     }
 
     private static final String PREF_FC_LEFT_DPAD = "fc_left_dpad";
@@ -4874,6 +5071,7 @@ public class MainActivity extends AppCompatActivity {
             ((PSButtonView) toggle).setFcSymbol(useDpad ? kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_DPAD
                     : kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_STICK);
         }
+        fcApplyHidden();
     }
 
     /** Puts the d-pad back where the other controller modes expect it. */
@@ -5424,6 +5622,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadHideTimeoutFromPrefs() {
+        if (BuildConfig.GAME_MODE) {
+            // PathZz2: controls stay on screen; they only hide by themselves if the player turns it on.
+            boolean autoHide = getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(PREF_FC_AUTO_HIDE, false);
+            hideDelayMs = autoHide ? 4000L : 0L;
+            return;
+        }
         try {
             android.content.SharedPreferences sp = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
             int sec = sp.getInt(PREF_HIDE_CONTROLS_SECONDS, 10); 
