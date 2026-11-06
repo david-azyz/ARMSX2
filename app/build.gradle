@@ -112,6 +112,18 @@ android {
     }
 
     signingConfigs {
+        // PathZz2: same key on every build, so a new APK installs over the old one
+        // (no uninstall, keeps the ISO, BIOS, saves and settings). The key comes from
+        // GitHub secrets (never stored in the repository); without it the normal debug key is used.
+        pathzz2 {
+            def ksPath = System.getenv("PATHZZ2_KEYSTORE_FILE")
+            if (ksPath != null && new File(ksPath).exists()) {
+                storeFile file(ksPath)
+                storePassword System.getenv("PATHZZ2_KEYSTORE_PASSWORD")
+                keyAlias "pathzz2"
+                keyPassword System.getenv("PATHZZ2_KEYSTORE_PASSWORD")
+            }
+        }
         release {
             storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
             storePassword keystoreProperties['storePassword']
@@ -128,6 +140,9 @@ android {
             debuggable true
             minifyEnabled false
             applicationIdSuffix ".debug"
+            if (System.getenv("PATHZZ2_KEYSTORE_FILE") != null && new File(System.getenv("PATHZZ2_KEYSTORE_FILE")).exists()) {
+                signingConfig signingConfigs.pathzz2
+            }
             buildConfigField "boolean", "LOGS_ENABLED", "true"
         }
         release {
