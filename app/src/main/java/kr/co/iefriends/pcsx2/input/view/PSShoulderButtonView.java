@@ -36,6 +36,13 @@ public class PSShoulderButtonView extends View {
     private FcButtonPainter fcPainter;
     private String fcSymbolText;
     private String fcLabel;
+    private String fcLabelDefense;
+
+    /** Name shown while defending (null = same as the attack name). */
+    public void setFcDefenseLabel(String label) {
+        fcLabelDefense = label;
+        invalidate();
+    }
 
     public void setFcStyle(String symbolText, String label) {
         fcPainter = new FcButtonPainter();
@@ -96,7 +103,8 @@ public class PSShoulderButtonView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (fcPainter != null) {
-            fcPainter.draw(canvas, getWidth(), getHeight(), isPressed, FcButtonPainter.SYMBOL_NONE, fcSymbolText, fcLabel);
+            fcPainter.draw(canvas, getWidth(), getHeight(), isPressed, FcButtonPainter.SYMBOL_NONE, fcSymbolText,
+                    FcButtonPainter.isDefense() && fcLabelDefense != null ? fcLabelDefense : fcLabel);
             return;
         }
 
