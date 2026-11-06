@@ -234,15 +234,6 @@
             android:layout_marginBottom="16dp"
             android:text="@string/fc_move_button" />
 
-        <!-- PathZz2: switch the controls between attack and defense by themselves -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/drawer_btn_fc_poss"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:text="@string/fc_poss_button" />
-
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
