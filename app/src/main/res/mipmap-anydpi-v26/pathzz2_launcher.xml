@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- PathZz2 launcher icon (original artwork, no third-party logos) -->
+<!-- PathZz2 launcher icon (artwork provided by the app author) -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/pathzz2_icon_bg" />
-    <foreground android:drawable="@drawable/pathzz2_icon_fg" />
+    <foreground android:drawable="@drawable/pathzz2_icon_art" />
 </adaptive-icon>
