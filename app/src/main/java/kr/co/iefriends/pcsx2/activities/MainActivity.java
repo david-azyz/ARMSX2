@@ -2310,8 +2310,6 @@ public class MainActivity extends AppCompatActivity {
         if (fcSizesBtn != null) fcSizesBtn.setOnClickListener(v -> fcShowButtonSizesDialog());
         View fcMoveBtn = findViewById(R.id.drawer_btn_fc_move);
         if (fcMoveBtn != null) fcMoveBtn.setOnClickListener(v -> fcEnterMoveMode());
-        View fcPossBtn = findViewById(R.id.drawer_btn_fc_poss);
-        if (fcPossBtn != null) fcPossBtn.setOnClickListener(v -> fcShowPossessionMenu());
         Slider uiScaleSlider = findViewById(R.id.drawer_slider_ui_scale);
         TextView uiScaleValue = findViewById(R.id.drawer_ui_scale_value);
         if (uiScaleSlider != null) {
@@ -2917,7 +2915,6 @@ public class MainActivity extends AppCompatActivity {
         applyJoystickStyle(joystickRight);
         applyDpadStyle(dpadView);
         applyUserUiScale();
-        fcApplyCompact();
     }
 
     private void setupDrawerSwitches() {
@@ -3459,427 +3456,6 @@ public class MainActivity extends AppCompatActivity {
             isVmPaused = false;
             updatePauseButtonIcon();
         }
-    }
-    // endregion
-
-    // region PathZz2: attack/defense controls that switch by themselves (ball possession detector)
-    private static final String PREF_POSS_ADDR = "fc_poss_addr";
-    private static final String PREF_POSS_A = "fc_poss_a";
-    private static final String PREF_POSS_B = "fc_poss_b";
-    private static final String PREF_POSS_AUTO = "fc_poss_auto";
-    private final android.os.Handler fcPossHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-    private android.view.View fcPossBanner;
-    private TextView fcPossStatus;
-    private int fcPossWith = 0, fcPossWithout = 0, fcPossLeft = -1;
-    private boolean fcPossBusy = false;
-    private int fcPossLastRead = -1, fcPossSameReads = 0;
-
-    private final Runnable fcPossTick = new Runnable() {
-        @Override
-        public void run() {
-            fcPossHandler.removeCallbacks(this);
-            android.content.SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
-            int addr = sp.getInt(PREF_POSS_ADDR, -1);
-            if (currentControllerMode == 3 && addr >= 0 && sp.getBoolean(PREF_POSS_AUTO, true) && !isVmPaused) {
-                int v = -1;
-                try { v = NativeApp.readEeByte(addr); } catch (Throwable ignored) {}
-                if (v >= 0) {
-                    fcPossSameReads = (v == fcPossLastRead) ? fcPossSameReads + 1 : 0;
-                    fcPossLastRead = v;
-                    if (fcPossSameReads >= 1) {
-                        if (v == sp.getInt(PREF_POSS_A, -1)) fcSetDefense(false);
-                        else if (v == sp.getInt(PREF_POSS_B, -1)) fcSetDefense(true);
-                    }
-                }
-            }
-            fcPossHandler.postDelayed(this, 120);
-        }
-    };
-
-    private void fcPossStartMonitor() {
-        fcPossHandler.removeCallbacks(fcPossTick);
-        fcPossHandler.postDelayed(fcPossTick, 500);
-    }
-
-    /** Green attack look or blue defense look, with the matching button names. */
-    private void fcSetDefense(boolean defense) {
-        if (kr.co.iefriends.pcsx2.input.view.FcButtonPainter.isDefense() == defense) return;
-        kr.co.iefriends.pcsx2.input.view.FcButtonPainter.setDefense(defense);
-        for (int id : FC_SIZE_IDS) {
-            View v = findViewById(id);
-            if (v != null) v.invalidate();
-        }
-        View dpad = findViewById(R.id.dpad_view);
-        if (dpad != null) dpad.invalidate();
-    }
-
-    private void fcApplyDefenseLabels() {
-        int[][] map = {
-                {R.id.btn_pad_x, R.string.fc_label_def_shoot},
-                {R.id.btn_pad_a, R.string.fc_label_def_pass},
-                {R.id.btn_pad_y, R.string.fc_label_def_through},
-                {R.id.btn_pad_b, R.string.fc_label_def_cross}};
-        for (int[] m : map) {
-            View v = findViewById(m[0]);
-            if (v instanceof PSButtonView) ((PSButtonView) v).setFcDefenseLabel(getString(m[1]));
-        }
-    }
-
-    private void fcShowPossessionMenu() {
-        closeInGameDrawer();
-        android.content.SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
-        boolean has = sp.getInt(PREF_POSS_ADDR, -1) >= 0;
-        boolean auto = sp.getBoolean(PREF_POSS_AUTO, true);
-        java.util.List<CharSequence> items = new java.util.ArrayList<>();
-        java.util.List<Runnable> actions = new java.util.ArrayList<>();
-        items.add(getString(R.string.fc_poss_detect));
-        actions.add(this::fcPossEnter);
-        if (has) {
-            items.add(getString(R.string.fc_poss_invert));
-            actions.add(() -> {
-                int a = sp.getInt(PREF_POSS_A, -1), b = sp.getInt(PREF_POSS_B, -1);
-                sp.edit().putInt(PREF_POSS_A, b).putInt(PREF_POSS_B, a).apply();
-                fcSetDefense(!kr.co.iefriends.pcsx2.input.view.FcButtonPainter.isDefense());
-            });
-            items.add(getString(auto ? R.string.fc_poss_auto_off : R.string.fc_poss_auto_on));
-            actions.add(() -> {
-                sp.edit().putBoolean(PREF_POSS_AUTO, !auto).apply();
-                if (auto) fcSetDefense(false);
-                fcApplyCompact();
-            });
-        }
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.fc_poss_button)
-                .setItems(items.toArray(new CharSequence[0]), (d, which) -> actions.get(which).run())
-                .show();
-    }
-
-    private void fcPossEnter() {
-        if (fcPossBanner != null) return;
-        try { NativeApp.possScanReset(); } catch (Throwable ignored) {}
-        fcPossWith = 0;
-        fcPossWithout = 0;
-        fcPossLeft = -1;
-        if (isVmPaused) {
-            try { NativeApp.resume(); } catch (Throwable ignored) {}
-            isVmPaused = false;
-            updatePauseButtonIcon();
-        }
-        setOnScreenControlsVisible(true);
-
-        android.widget.LinearLayout box = new android.widget.LinearLayout(this);
-        box.setOrientation(android.widget.LinearLayout.VERTICAL);
-        box.setPadding(dpToPx(14), dpToPx(8), dpToPx(14), dpToPx(8));
-        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
-        bg.setColor(0xE60A1118);
-        bg.setCornerRadius(dpToPx(16));
-        bg.setStroke(dpToPx(2), 0xFF3DF29A);
-        box.setBackground(bg);
-
-        TextView hint = new TextView(this);
-        hint.setText(R.string.fc_poss_hint);
-        hint.setTextColor(0xFFFFFFFF);
-        hint.setTextSize(12f);
-        hint.setMaxWidth(dpToPx(460));
-        box.addView(hint);
-        fcPossStatus = new TextView(this);
-        fcPossStatus.setTextColor(0xFFB8C7C0);
-        fcPossStatus.setTextSize(12f);
-        fcPossStatus.setPadding(0, dpToPx(4), 0, dpToPx(4));
-        box.addView(fcPossStatus);
-        fcPossUpdateStatus();
-
-        android.widget.LinearLayout row = new android.widget.LinearLayout(this);
-        row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-        row.setGravity(android.view.Gravity.CENTER);
-        com.google.android.material.button.MaterialButton with = fcPossMakeButton(R.string.fc_poss_with, 0xFF1F9E63);
-        with.setOnClickListener(x -> fcPossMark(0));
-        com.google.android.material.button.MaterialButton without = fcPossMakeButton(R.string.fc_poss_without, 0xFF2A7FC4);
-        without.setOnClickListener(x -> fcPossMark(1));
-        com.google.android.material.button.MaterialButton restart = fcPossMakeButton(R.string.fc_poss_restart, 0xFF39424A);
-        restart.setOnClickListener(x -> {
-            try { NativeApp.possScanReset(); } catch (Throwable ignored) {}
-            fcPossWith = 0; fcPossWithout = 0; fcPossLeft = -1;
-            fcPossUpdateStatus();
-        });
-        com.google.android.material.button.MaterialButton done = fcPossMakeButton(R.string.fc_poss_done, 0xFF39424A);
-        done.setOnClickListener(x -> fcPossFinish());
-        android.widget.LinearLayout.LayoutParams blp = new android.widget.LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        blp.setMarginEnd(dpToPx(8));
-        row.addView(with, blp);
-        row.addView(without, new android.widget.LinearLayout.LayoutParams(blp));
-        row.addView(restart, new android.widget.LinearLayout.LayoutParams(blp));
-        row.addView(done, new android.widget.LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        box.addView(row);
-
-        ViewGroup root = findViewById(R.id.in_game_root);
-        if (root instanceof androidx.constraintlayout.widget.ConstraintLayout) {
-            androidx.constraintlayout.widget.ConstraintLayout.LayoutParams lp =
-                    new androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(
-                            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            lp.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
-            lp.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
-            lp.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
-            lp.topMargin = dpToPx(8);
-            root.addView(box, lp);
-            box.setElevation(dpToPx(8));
-            fcPossBanner = box;
-        }
-    }
-
-    private com.google.android.material.button.MaterialButton fcPossMakeButton(int textRes, int color) {
-        com.google.android.material.button.MaterialButton b = new com.google.android.material.button.MaterialButton(this);
-        b.setText(textRes);
-        b.setTextColor(0xFFFFFFFF);
-        b.setTextSize(12f);
-        b.setAllCaps(false);
-        b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
-        b.setInsetTop(0);
-        b.setInsetBottom(0);
-        b.setMinHeight(dpToPx(40));
-        return b;
-    }
-
-    private void fcPossUpdateStatus() {
-        if (fcPossStatus == null) return;
-        String left = fcPossLeft < 0 ? "-" : String.valueOf(fcPossLeft);
-        fcPossStatus.setText(getString(R.string.fc_poss_status, fcPossWith, fcPossWithout, left));
-    }
-
-    private void fcPossMark(int which) {
-        if (fcPossBusy) return;
-        fcPossBusy = true;
-        new Thread(() -> {
-            int r;
-            try { r = NativeApp.possScanStep(which); } catch (Throwable t) { r = -2; }
-            final int res = r;
-            runOnUiThread(() -> {
-                fcPossBusy = false;
-                if (res == -2) return;
-                if (which == 0) fcPossWith++; else fcPossWithout++;
-                if (res >= 0) fcPossLeft = res;
-                fcPossUpdateStatus();
-            });
-        }, "PossScan").start();
-    }
-
-    private void fcPossFinish() {
-        if (fcPossWith == 0 || fcPossWithout == 0) {
-            Toast.makeText(this, R.string.fc_poss_not_ready, Toast.LENGTH_LONG).show();
-            return;
-        }
-        if (fcPossLeft == 0) {
-            Toast.makeText(this, R.string.fc_poss_none, Toast.LENGTH_LONG).show();
-            return;
-        }
-        if (fcPossLeft > 40 && fcPossWith + fcPossWithout < 10) {
-            Toast.makeText(this, getString(R.string.fc_poss_many, fcPossLeft), Toast.LENGTH_LONG).show();
-            return;
-        }
-        long[] res = null;
-        try { res = NativeApp.possScanResults(1); } catch (Throwable ignored) {}
-        if (res == null || res.length == 0) {
-            Toast.makeText(this, R.string.fc_poss_none, Toast.LENGTH_LONG).show();
-            return;
-        }
-        long c = res[0];
-        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
-                .putInt(PREF_POSS_ADDR, (int) (c >>> 16))
-                .putInt(PREF_POSS_A, (int) ((c >>> 8) & 0xFF))
-                .putInt(PREF_POSS_B, (int) (c & 0xFF))
-                .putBoolean(PREF_POSS_AUTO, true)
-                .apply();
-        fcPossExit();
-        fcPossStartMonitor();
-        fcApplyCompact();
-        Toast.makeText(this, R.string.fc_poss_ok, Toast.LENGTH_LONG).show();
-    }
-
-    private void fcPossExit() {
-        if (fcPossBanner != null && fcPossBanner.getParent() instanceof ViewGroup) {
-            ((ViewGroup) fcPossBanner.getParent()).removeView(fcPossBanner);
-        }
-        fcPossBanner = null;
-        fcPossStatus = null;
-        try { NativeApp.possScanReset(); } catch (Throwable ignored) {}
-    }
-    // endregion
-
-    // region PathZz2: compact controls (4 buttons, swipe for the second action, small ones behind "...")
-    private static final String PREF_FC_COMPACT = "fc_compact";
-    private boolean fcMoreOpen = false;
-    private boolean fcCompactHid = false;
-    private View fcMoreButton;
-    private FcSlot fcSlotPass, fcSlotShoot, fcSlotThrough;
-    private static final int[] FC_SMALL_IDS = {
-            R.id.btn_pad_l2, R.id.btn_pad_r2, R.id.btn_pad_l3, R.id.btn_pad_r3,
-            R.id.btn_pad_select, R.id.btn_pad_start, R.id.btn_fc_stick_toggle};
-
-    private boolean fcCompactEnabled() {
-        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(PREF_FC_COMPACT, true);
-    }
-
-    /** True when the possession detector is set up and switching by itself. */
-    private boolean fcPossActive() {
-        android.content.SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
-        return sp.getInt(PREF_POSS_ADDR, -1) >= 0 && sp.getBoolean(PREF_POSS_AUTO, true);
-    }
-
-    private boolean fcInDefense() {
-        return fcPossActive() && kr.co.iefriends.pcsx2.input.view.FcButtonPainter.isDefense();
-    }
-
-    /** One on-screen button that sends different PS2 buttons in attack and defense. 0 = nothing. */
-    private final class FcSlot implements PSButtonView.FcGesture {
-        final View view;
-        final int atkTap, atkSwipe, defTap, defSwipe;
-        int downTap = 0, downSwipe = 0;
-
-        FcSlot(View view, int atkTap, int atkSwipe, int defTap, int defSwipe) {
-            this.view = view;
-            this.atkTap = atkTap;
-            this.atkSwipe = atkSwipe;
-            this.defTap = defTap;
-            this.defSwipe = defSwipe;
-        }
-
-        @Override
-        public boolean swipeEnabled() {
-            return (fcInDefense() ? defSwipe : atkSwipe) != 0;
-        }
-
-        private void send(int code, boolean pressed) {
-            if (code == 0) return;
-            if (code == KeyEvent.KEYCODE_BUTTON_L1) {
-                NativeApp.setPadButton(code, 0, pressed);
-            } else {
-                sendKeyAction(view, pressed ? MotionEvent.ACTION_DOWN : MotionEvent.ACTION_UP, code);
-            }
-            if (code == KeyEvent.KEYCODE_BUTTON_A) fcHandleXHoldSprint(view, pressed);
-        }
-
-        @Override
-        public void onPrimary(boolean pressed) {
-            if (pressed) {
-                downTap = fcInDefense() ? defTap : atkTap;
-                send(downTap, true);
-            } else if (downTap != 0) {
-                send(downTap, false);
-                downTap = 0;
-            }
-        }
-
-        @Override
-        public void onSwipe(boolean pressed) {
-            if (pressed) {
-                downSwipe = fcInDefense() ? defSwipe : atkSwipe;
-                send(downSwipe, true);
-            } else if (downSwipe != 0) {
-                send(downSwipe, false);
-                downSwipe = 0;
-            }
-        }
-    }
-
-    /** Shows/hides buttons and sets names, gestures and the "..." button for the compact layout. */
-    private void fcApplyCompact() {
-        boolean on = BuildConfig.GAME_MODE && currentControllerMode == 3 && fcCompactEnabled();
-        View pass = findViewById(R.id.btn_pad_a);
-        View shoot = findViewById(R.id.btn_pad_x);
-        View through = findViewById(R.id.btn_pad_y);
-        View cross = findViewById(R.id.btn_pad_b);
-        View sw = findViewById(R.id.btn_pad_l1);
-        if (!on) {
-            for (View v : new View[]{pass, shoot, through}) {
-                if (v instanceof PSButtonView) {
-                    PSButtonView b = (PSButtonView) v;
-                    b.setFcGesture(null);
-                    b.setFcHints(null, null);
-                    b.setFcDefenseSymbol(-1, null);
-                }
-            }
-            if (fcCompactHid) {
-                if (cross != null) cross.setVisibility(View.VISIBLE);
-                if (sw != null) sw.setVisibility(View.VISIBLE);
-                for (int id : FC_SMALL_IDS) {
-                    View v = findViewById(id);
-                    if (v != null) v.setVisibility(View.VISIBLE);
-                }
-                fcCompactHid = false;
-                if (currentControllerMode == 3) fcApplyDefenseLabels();
-            }
-            if (fcMoreButton != null) fcMoreButton.setVisibility(View.GONE);
-            return;
-        }
-        fcCompactHid = true;
-        boolean poss = fcPossActive();
-        int A = KeyEvent.KEYCODE_BUTTON_A, B = KeyEvent.KEYCODE_BUTTON_B,
-                X = KeyEvent.KEYCODE_BUTTON_X, Y = KeyEvent.KEYCODE_BUTTON_Y, L1 = KeyEvent.KEYCODE_BUTTON_L1;
-        // PASSE: tap X, swipe = cross (circle). Defense: PRESSIONAR (X), swipe = CERCAR (square).
-        if (pass instanceof PSButtonView) {
-            PSButtonView b = (PSButtonView) pass;
-            if (fcSlotPass == null || fcSlotPass.view != pass) fcSlotPass = new FcSlot(pass, A, B, A, X);
-            b.setFcGesture(fcSlotPass);
-            b.setFcDefenseLabel(getString(R.string.fc_label_def_pass));
-            b.setFcDefenseSymbol(-1, null);
-            b.setFcHints(getString(R.string.fc_hint_cross), getString(R.string.fc_hint_press));
-        }
-        // CHUTE: square. Defense: CARRINHO (circle), swipe = GOLEIRO (triangle).
-        if (shoot instanceof PSButtonView) {
-            PSButtonView b = (PSButtonView) shoot;
-            if (fcSlotShoot == null || fcSlotShoot.view != shoot) fcSlotShoot = new FcSlot(shoot, X, 0, B, Y);
-            b.setFcGesture(fcSlotShoot);
-            b.setFcDefenseLabel(getString(R.string.fc_label_def_cross));
-            b.setFcDefenseSymbol(kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_CIRCLE, null);
-            b.setFcHints(null, getString(R.string.fc_hint_keeper));
-        }
-        // ENFIADA: triangle. Defense: TROCAR (L1).
-        if (through instanceof PSButtonView) {
-            PSButtonView b = (PSButtonView) through;
-            if (fcSlotThrough == null || fcSlotThrough.view != through) fcSlotThrough = new FcSlot(through, Y, 0, L1, 0);
-            b.setFcGesture(fcSlotThrough);
-            b.setFcDefenseLabel(getString(R.string.fc_label_switch));
-            b.setFcDefenseSymbol(-1, "L1");
-            b.setFcHints(null, null);
-        }
-        if (cross != null) cross.setVisibility(View.INVISIBLE);
-        // Without the detector the controls stay in attack, so keep TROCAR on screen.
-        if (sw != null) sw.setVisibility(poss ? View.INVISIBLE : View.VISIBLE);
-        for (int id : FC_SMALL_IDS) {
-            View v = findViewById(id);
-            if (v != null) v.setVisibility(fcMoreOpen ? View.VISIBLE : View.INVISIBLE);
-        }
-        fcEnsureMoreButton();
-        if (fcMoreButton != null) {
-            boolean shown = llPadRight != null && llPadRight.getVisibility() == View.VISIBLE;
-            fcMoreButton.setVisibility(shown ? View.VISIBLE : View.GONE);
-            fcMoreButton.invalidate();
-        }
-    }
-
-    private void fcEnsureMoreButton() {
-        if (fcMoreButton != null) return;
-        ViewGroup root = findViewById(R.id.in_game_root);
-        if (!(root instanceof androidx.constraintlayout.widget.ConstraintLayout)) return;
-        PSShoulderButtonView more = new PSShoulderButtonView(this);
-        more.setFcStyle("•••", null);
-        more.setOnPSShoulderButtonListener(pressed -> {
-            if (!pressed) return;
-            fcMoreOpen = !fcMoreOpen;
-            fcApplyCompact();
-        });
-        int size = dpToPx(46);
-        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams lp =
-                new androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(size, size);
-        lp.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
-        lp.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
-        lp.topMargin = dpToPx(60);
-        lp.setMarginEnd(dpToPx(14));
-        root.addView(more, lp);
-        more.setElevation(dpToPx(4));
-        fcMoreButton = more;
     }
     // endregion
 
@@ -4706,7 +4282,6 @@ public class MainActivity extends AppCompatActivity {
 
 	@Override
 	protected void onDestroy() {
-		fcPossHandler.removeCallbacksAndMessages(null);
 		stopEmuThread();
 		LogcatRecorder.shutdown();
 		super.onDestroy();
@@ -5148,10 +4723,6 @@ public class MainActivity extends AppCompatActivity {
             fcExitMoveMode();
             return;
         }
-        if (fcPossBanner != null) {
-            fcPossExit();
-            return;
-        }
         if (inGameDrawer != null && inGameDrawer.isDrawerOpen(GravityCompat.START)) {
             inGameDrawer.closeDrawer(GravityCompat.START);
             return;
@@ -5261,9 +4832,6 @@ public class MainActivity extends AppCompatActivity {
         fcExpandContainers();
         fcApplyButtonOffsets();
         fcInstallDragHandlers();
-        fcApplyDefenseLabels();
-        fcPossStartMonitor();
-        fcApplyCompact();
     }
 
     private static final String PREF_FC_LEFT_DPAD = "fc_left_dpad";
@@ -5463,7 +5031,6 @@ public class MainActivity extends AppCompatActivity {
         if (visible && currentControllerMode == 3) {
             fcApplyLeftControl();
         }
-        fcApplyCompact();
         
         if (!visible) {
             hideDrawerToggle();
@@ -6360,7 +5927,6 @@ public class MainActivity extends AppCompatActivity {
         if (!show && currentControllerMode == 3) {
             fcApplyLeftControl();
         }
-        fcApplyCompact();
         try {
             if (show) {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
