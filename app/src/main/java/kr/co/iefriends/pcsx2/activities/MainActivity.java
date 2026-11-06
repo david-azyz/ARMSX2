@@ -2917,6 +2917,7 @@ public class MainActivity extends AppCompatActivity {
         applyJoystickStyle(joystickRight);
         applyDpadStyle(dpadView);
         applyUserUiScale();
+        fcApplyCompact();
     }
 
     private void setupDrawerSwitches() {
@@ -3544,6 +3545,7 @@ public class MainActivity extends AppCompatActivity {
             actions.add(() -> {
                 sp.edit().putBoolean(PREF_POSS_AUTO, !auto).apply();
                 if (auto) fcSetDefense(false);
+                fcApplyCompact();
             });
         }
         new MaterialAlertDialogBuilder(this)
@@ -3691,6 +3693,7 @@ public class MainActivity extends AppCompatActivity {
                 .apply();
         fcPossExit();
         fcPossStartMonitor();
+        fcApplyCompact();
         Toast.makeText(this, R.string.fc_poss_ok, Toast.LENGTH_LONG).show();
     }
 
@@ -3701,6 +3704,182 @@ public class MainActivity extends AppCompatActivity {
         fcPossBanner = null;
         fcPossStatus = null;
         try { NativeApp.possScanReset(); } catch (Throwable ignored) {}
+    }
+    // endregion
+
+    // region PathZz2: compact controls (4 buttons, swipe for the second action, small ones behind "...")
+    private static final String PREF_FC_COMPACT = "fc_compact";
+    private boolean fcMoreOpen = false;
+    private boolean fcCompactHid = false;
+    private View fcMoreButton;
+    private FcSlot fcSlotPass, fcSlotShoot, fcSlotThrough;
+    private static final int[] FC_SMALL_IDS = {
+            R.id.btn_pad_l2, R.id.btn_pad_r2, R.id.btn_pad_l3, R.id.btn_pad_r3,
+            R.id.btn_pad_select, R.id.btn_pad_start, R.id.btn_fc_stick_toggle};
+
+    private boolean fcCompactEnabled() {
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(PREF_FC_COMPACT, true);
+    }
+
+    /** True when the possession detector is set up and switching by itself. */
+    private boolean fcPossActive() {
+        android.content.SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
+        return sp.getInt(PREF_POSS_ADDR, -1) >= 0 && sp.getBoolean(PREF_POSS_AUTO, true);
+    }
+
+    private boolean fcInDefense() {
+        return fcPossActive() && kr.co.iefriends.pcsx2.input.view.FcButtonPainter.isDefense();
+    }
+
+    /** One on-screen button that sends different PS2 buttons in attack and defense. 0 = nothing. */
+    private final class FcSlot implements PSButtonView.FcGesture {
+        final View view;
+        final int atkTap, atkSwipe, defTap, defSwipe;
+        int downTap = 0, downSwipe = 0;
+
+        FcSlot(View view, int atkTap, int atkSwipe, int defTap, int defSwipe) {
+            this.view = view;
+            this.atkTap = atkTap;
+            this.atkSwipe = atkSwipe;
+            this.defTap = defTap;
+            this.defSwipe = defSwipe;
+        }
+
+        @Override
+        public boolean swipeEnabled() {
+            return (fcInDefense() ? defSwipe : atkSwipe) != 0;
+        }
+
+        private void send(int code, boolean pressed) {
+            if (code == 0) return;
+            if (code == KeyEvent.KEYCODE_BUTTON_L1) {
+                NativeApp.setPadButton(code, 0, pressed);
+            } else {
+                sendKeyAction(view, pressed ? MotionEvent.ACTION_DOWN : MotionEvent.ACTION_UP, code);
+            }
+            if (code == KeyEvent.KEYCODE_BUTTON_A) fcHandleXHoldSprint(view, pressed);
+        }
+
+        @Override
+        public void onPrimary(boolean pressed) {
+            if (pressed) {
+                downTap = fcInDefense() ? defTap : atkTap;
+                send(downTap, true);
+            } else if (downTap != 0) {
+                send(downTap, false);
+                downTap = 0;
+            }
+        }
+
+        @Override
+        public void onSwipe(boolean pressed) {
+            if (pressed) {
+                downSwipe = fcInDefense() ? defSwipe : atkSwipe;
+                send(downSwipe, true);
+            } else if (downSwipe != 0) {
+                send(downSwipe, false);
+                downSwipe = 0;
+            }
+        }
+    }
+
+    /** Shows/hides buttons and sets names, gestures and the "..." button for the compact layout. */
+    private void fcApplyCompact() {
+        boolean on = BuildConfig.GAME_MODE && currentControllerMode == 3 && fcCompactEnabled();
+        View pass = findViewById(R.id.btn_pad_a);
+        View shoot = findViewById(R.id.btn_pad_x);
+        View through = findViewById(R.id.btn_pad_y);
+        View cross = findViewById(R.id.btn_pad_b);
+        View sw = findViewById(R.id.btn_pad_l1);
+        if (!on) {
+            for (View v : new View[]{pass, shoot, through}) {
+                if (v instanceof PSButtonView) {
+                    PSButtonView b = (PSButtonView) v;
+                    b.setFcGesture(null);
+                    b.setFcHints(null, null);
+                    b.setFcDefenseSymbol(-1, null);
+                }
+            }
+            if (fcCompactHid) {
+                if (cross != null) cross.setVisibility(View.VISIBLE);
+                if (sw != null) sw.setVisibility(View.VISIBLE);
+                for (int id : FC_SMALL_IDS) {
+                    View v = findViewById(id);
+                    if (v != null) v.setVisibility(View.VISIBLE);
+                }
+                fcCompactHid = false;
+                if (currentControllerMode == 3) fcApplyDefenseLabels();
+            }
+            if (fcMoreButton != null) fcMoreButton.setVisibility(View.GONE);
+            return;
+        }
+        fcCompactHid = true;
+        boolean poss = fcPossActive();
+        int A = KeyEvent.KEYCODE_BUTTON_A, B = KeyEvent.KEYCODE_BUTTON_B,
+                X = KeyEvent.KEYCODE_BUTTON_X, Y = KeyEvent.KEYCODE_BUTTON_Y, L1 = KeyEvent.KEYCODE_BUTTON_L1;
+        // PASSE: tap X, swipe = cross (circle). Defense: PRESSIONAR (X), swipe = CERCAR (square).
+        if (pass instanceof PSButtonView) {
+            PSButtonView b = (PSButtonView) pass;
+            if (fcSlotPass == null || fcSlotPass.view != pass) fcSlotPass = new FcSlot(pass, A, B, A, X);
+            b.setFcGesture(fcSlotPass);
+            b.setFcDefenseLabel(getString(R.string.fc_label_def_pass));
+            b.setFcDefenseSymbol(-1, null);
+            b.setFcHints(getString(R.string.fc_hint_cross), getString(R.string.fc_hint_press));
+        }
+        // CHUTE: square. Defense: CARRINHO (circle), swipe = GOLEIRO (triangle).
+        if (shoot instanceof PSButtonView) {
+            PSButtonView b = (PSButtonView) shoot;
+            if (fcSlotShoot == null || fcSlotShoot.view != shoot) fcSlotShoot = new FcSlot(shoot, X, 0, B, Y);
+            b.setFcGesture(fcSlotShoot);
+            b.setFcDefenseLabel(getString(R.string.fc_label_def_cross));
+            b.setFcDefenseSymbol(kr.co.iefriends.pcsx2.input.view.FcButtonPainter.SYMBOL_CIRCLE, null);
+            b.setFcHints(null, getString(R.string.fc_hint_keeper));
+        }
+        // ENFIADA: triangle. Defense: TROCAR (L1).
+        if (through instanceof PSButtonView) {
+            PSButtonView b = (PSButtonView) through;
+            if (fcSlotThrough == null || fcSlotThrough.view != through) fcSlotThrough = new FcSlot(through, Y, 0, L1, 0);
+            b.setFcGesture(fcSlotThrough);
+            b.setFcDefenseLabel(getString(R.string.fc_label_switch));
+            b.setFcDefenseSymbol(-1, "L1");
+            b.setFcHints(null, null);
+        }
+        if (cross != null) cross.setVisibility(View.INVISIBLE);
+        // Without the detector the controls stay in attack, so keep TROCAR on screen.
+        if (sw != null) sw.setVisibility(poss ? View.INVISIBLE : View.VISIBLE);
+        for (int id : FC_SMALL_IDS) {
+            View v = findViewById(id);
+            if (v != null) v.setVisibility(fcMoreOpen ? View.VISIBLE : View.INVISIBLE);
+        }
+        fcEnsureMoreButton();
+        if (fcMoreButton != null) {
+            boolean shown = llPadRight != null && llPadRight.getVisibility() == View.VISIBLE;
+            fcMoreButton.setVisibility(shown ? View.VISIBLE : View.GONE);
+            fcMoreButton.invalidate();
+        }
+    }
+
+    private void fcEnsureMoreButton() {
+        if (fcMoreButton != null) return;
+        ViewGroup root = findViewById(R.id.in_game_root);
+        if (!(root instanceof androidx.constraintlayout.widget.ConstraintLayout)) return;
+        PSShoulderButtonView more = new PSShoulderButtonView(this);
+        more.setFcStyle("•••", null);
+        more.setOnPSShoulderButtonListener(pressed -> {
+            if (!pressed) return;
+            fcMoreOpen = !fcMoreOpen;
+            fcApplyCompact();
+        });
+        int size = dpToPx(46);
+        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams lp =
+                new androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(size, size);
+        lp.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+        lp.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+        lp.topMargin = dpToPx(60);
+        lp.setMarginEnd(dpToPx(14));
+        root.addView(more, lp);
+        more.setElevation(dpToPx(4));
+        fcMoreButton = more;
     }
     // endregion
 
@@ -5084,6 +5263,7 @@ public class MainActivity extends AppCompatActivity {
         fcInstallDragHandlers();
         fcApplyDefenseLabels();
         fcPossStartMonitor();
+        fcApplyCompact();
     }
 
     private static final String PREF_FC_LEFT_DPAD = "fc_left_dpad";
@@ -5283,6 +5463,7 @@ public class MainActivity extends AppCompatActivity {
         if (visible && currentControllerMode == 3) {
             fcApplyLeftControl();
         }
+        fcApplyCompact();
         
         if (!visible) {
             hideDrawerToggle();
@@ -6179,6 +6360,7 @@ public class MainActivity extends AppCompatActivity {
         if (!show && currentControllerMode == 3) {
             fcApplyLeftControl();
         }
+        fcApplyCompact();
         try {
             if (show) {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
