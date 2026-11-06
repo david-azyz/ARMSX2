@@ -109,6 +109,11 @@ public final class FcButtonPainter {
      * @param label action name, may be null
      */
     public void draw(Canvas c, int w, int h, boolean pressed, int symbolType, String symbolText, String label) {
+        draw(c, w, h, pressed, symbolType, symbolText, label, null);
+    }
+
+    /** Same as above; {@code hint} is a small coloured line under the name (e.g. "deslize: CRUZAR") plus swipe marks. */
+    public void draw(Canvas c, int w, int h, boolean pressed, int symbolType, String symbolText, String label, String hint) {
         float d = Math.min(w, h);
         float cx = w / 2f;
         float cy = h / 2f;
@@ -128,7 +133,24 @@ public final class FcButtonPainter {
         c.drawCircle(cx, cy, r * 0.88f, ring);
 
         boolean hasLabel = label != null && !label.isEmpty();
+        boolean hasHint = hint != null && !hint.isEmpty();
         text.setShadowLayer(d * 0.02f, 0f, d * 0.008f, 0xAA000000);
+        float shift = hasHint ? d * 0.05f : 0f;
+        if (hasHint) {
+            // Little chevrons around the ring: "you can drag your finger here".
+            symbol.setColor(acc);
+            symbol.setStrokeWidth(Math.max(1.5f, d * 0.016f));
+            float o = r + halo * 0.55f;
+            float a = d * 0.03f;
+            drawChevron(c, cx, cy - o, a, 0);
+            drawChevron(c, cx + o, cy, a, 1);
+            drawChevron(c, cx, cy + o, a, 2);
+            drawChevron(c, cx - o, cy, a, 3);
+            text.setColor(acc);
+            fitText(hint, d * 0.075f, r * 1.5f);
+            c.drawText(hint, cx, cy + d * 0.23f, text);
+        }
+        cy -= shift;
 
         if (symbolText != null && !symbolText.isEmpty()) {
             if (hasLabel) {
