@@ -18,33 +18,6 @@
     <string name="fc_label_cross" translatable="false">CRUZAR</string>
     <string name="fc_label_sprint" translatable="false">CORRER</string>
     <string name="fc_label_switch" translatable="false">TROCAR</string>
-    <!-- Nomes na defesa (sem a bola) -->
-    <string name="fc_label_def_shoot" translatable="false">CERCAR</string>
-    <string name="fc_label_def_pass" translatable="false">PRESSIONAR</string>
-    <string name="fc_label_def_through" translatable="false">GOLEIRO</string>
-    <string name="fc_label_def_cross" translatable="false">CARRINHO</string>
-    <!-- Controle enxuto (4 botões, deslizar = segunda função) -->
-    <string name="fc_compact_on" translatable="false">Usar controle enxuto (4 botões)</string>
-    <string name="fc_compact_off" translatable="false">Usar controle completo (6 botões)</string>
-    <string name="fc_hint_cross" translatable="false">deslize: CRUZAR</string>
-    <string name="fc_hint_press" translatable="false">deslize: CERCAR</string>
-    <string name="fc_hint_keeper" translatable="false">deslize: GOLEIRO</string>
-    <!-- Detector de posse de bola -->
-    <string name="fc_poss_button" translatable="false">Posse de bola (ataque/defesa)</string>
-    <string name="fc_poss_detect" translatable="false">Detectar posse de bola</string>
-    <string name="fc_poss_invert" translatable="false">Inverter ataque/defesa</string>
-    <string name="fc_poss_auto_on" translatable="false">Ligar troca automática</string>
-    <string name="fc_poss_auto_off" translatable="false">Desligar troca automática</string>
-    <string name="fc_poss_hint" translatable="false">Jogue e toque no botão certo: COM A BOLA quando seu time tiver a bola, SEM A BOLA quando o adversário tiver. Faça umas 3 vezes cada.</string>
-    <string name="fc_poss_with" translatable="false">COM A BOLA</string>
-    <string name="fc_poss_without" translatable="false">SEM A BOLA</string>
-    <string name="fc_poss_restart" translatable="false">Recomeçar</string>
-    <string name="fc_poss_done" translatable="false">Concluir</string>
-    <string name="fc_poss_status" translatable="false">Com a bola: %1$d · Sem a bola: %2$d · Possíveis: %3$s</string>
-    <string name="fc_poss_ok" translatable="false">Pronto! Os controles agora trocam sozinhos entre ataque e defesa.</string>
-    <string name="fc_poss_many" translatable="false">Ainda tem muitas possibilidades (%1$d). Marque mais algumas vezes antes de concluir.</string>
-    <string name="fc_poss_none" translatable="false">Não achei. Toque em Recomeçar e tente de novo, marcando só quando estiver bem claro quem tem a bola.</string>
-    <string name="fc_poss_not_ready" translatable="false">Marque pelo menos uma vez COM A BOLA e uma vez SEM A BOLA.</string>
     <string name="fc_mode_name" translatable="false">Futebol (estilo mobile)</string>
     <string name="fc_scale_label" translatable="false">Tamanho dos controles</string>
     <string name="fc_alpha_label" translatable="false">Transparência dos controles</string>
