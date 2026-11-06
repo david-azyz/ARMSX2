@@ -168,7 +168,12 @@ public final class FcButtonPainter {
             return;
         }
 
-        if (hasLabel) {
+        if (hasLabel && symbolType == SYMBOL_NONE) {
+            // No PlayStation symbol (L3, R3, SELECT, START): just the name, big and centred.
+            text.setColor(0xFFFFFFFF);
+            fitText(label, d * 0.24f, r * 1.5f);
+            c.drawText(label, cx, cy + text.getTextSize() * 0.36f, text);
+        } else if (hasLabel) {
             // Small symbol in a little circle above the action name.
             float chipR = d * 0.085f;
             float chipY = cy - d * 0.12f;
