@@ -119,9 +119,9 @@ android {
             def ksPath = System.getenv("PATHZZ2_KEYSTORE_FILE")
             if (ksPath != null && new File(ksPath).exists()) {
                 storeFile file(ksPath)
-                storePassword System.getenv("PATHZZ2_KEYSTORE_PASSWORD")
+                storePassword System.getenv("PATHZZ2_KEYSTORE_PASSWORD")?.trim()
                 keyAlias "pathzz2"
-                keyPassword System.getenv("PATHZZ2_KEYSTORE_PASSWORD")
+                keyPassword System.getenv("PATHZZ2_KEYSTORE_PASSWORD")?.trim()
             }
         }
         release {
