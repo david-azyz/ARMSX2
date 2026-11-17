@@ -243,6 +243,15 @@
             android:layout_marginBottom="8dp"
             android:text="@string/fc_visible_button" />
 
+        <!-- PathZz2: lighter emulation for steadier FPS -->
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/drawer_sw_fc_perf"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/fc_perf"
+            android:textColor="?attr/colorOnSurface" />
+
         <!-- PathZz2: controls stay on screen unless this is turned on -->
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/drawer_sw_fc_autohide"

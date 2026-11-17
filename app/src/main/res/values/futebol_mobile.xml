@@ -34,6 +34,8 @@
     <string name="fc_visible_title" translatable="false">Botões na tela</string>
     <string name="fc_visible_done" translatable="false">Pronto</string>
     <string name="fc_autohide" translatable="false">Esconder controles sozinho</string>
+    <string name="fc_perf" translatable="false">Modo desempenho (menos travadas)</string>
+    <string name="fc_perf_restart" translatable="false">Vale a partir da próxima vez que abrir o jogo.</string>
 
     <!-- Menu de pausa (botão voltar do celular) -->
     <string name="fc_pause_title" translatable="false">Jogo pausado</string>

@@ -2312,6 +2312,15 @@ public class MainActivity extends AppCompatActivity {
         if (fcMoveBtn != null) fcMoveBtn.setOnClickListener(v -> fcEnterMoveMode());
         View fcVisibleBtn = findViewById(R.id.drawer_btn_fc_visible);
         if (fcVisibleBtn != null) fcVisibleBtn.setOnClickListener(v -> fcShowVisibleDialog());
+        MaterialSwitch fcPerf = findViewById(R.id.drawer_sw_fc_perf);
+        if (fcPerf != null) {
+            fcPerf.setChecked(getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(PREF_FC_PERF, true));
+            fcPerf.setOnCheckedChangeListener((b, checked) -> {
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(PREF_FC_PERF, checked).apply();
+                if (checked) fcSetSpeedhacks(-1, 1); else fcSetSpeedhacks(0, 0);
+                Toast.makeText(this, R.string.fc_perf_restart, Toast.LENGTH_LONG).show();
+            });
+        }
         MaterialSwitch fcAutoHide = findViewById(R.id.drawer_sw_fc_autohide);
         if (fcAutoHide != null) {
             fcAutoHide.setChecked(getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(PREF_FC_AUTO_HIDE, false));
@@ -3631,6 +3640,14 @@ public class MainActivity extends AppCompatActivity {
 
     // region PathZz2: show or hide each on-screen button
     private static final String PREF_FC_AUTO_HIDE = "fc_auto_hide";
+    private static final String PREF_FC_PERF = "fc_perf_mode";
+
+    private void fcSetSpeedhacks(int cycleRate, int cycleSkip) {
+        try {
+            NativeApp.setSetting("EmuCore/Speedhacks", "EECycleRate", "int", Integer.toString(cycleRate));
+            NativeApp.setSetting("EmuCore/Speedhacks", "EECycleSkip", "int", Integer.toString(cycleSkip));
+        } catch (Throwable ignored) {}
+    }
 
     private String fcHiddenKey(int id) {
         return "fc_hidden_" + getResources().getResourceEntryName(id);
@@ -3823,7 +3840,9 @@ public class MainActivity extends AppCompatActivity {
             btn_pad_a.setScaleY(faceScale);
             btn_pad_a.setOnPSButtonListener(pressed -> {
                 int action = pressed ? MotionEvent.ACTION_DOWN : MotionEvent.ACTION_UP;
+                if (pressed) fcSetR2ByPass(true); // PathZz2: pass with R2 held = more accurate pass
                 sendKeyAction(btn_pad_a, action, KeyEvent.KEYCODE_BUTTON_A);
+                if (!pressed) fcSetR2ByPass(false);
                 fcHandleXHoldSprint(btn_pad_a, pressed);
             });
         }
@@ -3893,7 +3912,10 @@ public class MainActivity extends AppCompatActivity {
             applyShoulderIcon(btn_pad_r2, R.drawable.ic_ps_r2, "ic_controller_r2_button.png");
             btn_pad_r2.setScaleX(1.0f);
             btn_pad_r2.setScaleY(isNether ? 0.6f : 1.0f);
-            btn_pad_r2.setOnPSShoulderButtonListener(pressed -> NativeApp.setPadButton(KeyEvent.KEYCODE_BUTTON_R2, 0, pressed));
+            btn_pad_r2.setOnPSShoulderButtonListener(pressed -> {
+                fcR2HeldByButton = pressed;
+                fcUpdateR2();
+            });
         }
 
         PSButtonView btn_pad_l3 = findViewById(R.id.btn_pad_l3);
@@ -4984,6 +5006,10 @@ public class MainActivity extends AppCompatActivity {
         try {
             NativeApp.setSetting("EmuCore/CPU/Recompiler", "EnableVU0", "bool", on ? "false" : "true");
         } catch (Throwable ignored) {}
+        // PathZz2 "Modo desempenho": light EE underclock + cycle skip for steadier FPS (on by default).
+        if (getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(PREF_FC_PERF, true)) {
+            fcSetSpeedhacks(-1, 1);
+        }
         // PathZz2: hide the English warnings in the top-left corner (OSD messages).
         try {
             NativeApp.setSetting("EmuCore/GS", "OsdMessagesPos", "int", "0");
@@ -5131,6 +5157,21 @@ public class MainActivity extends AppCompatActivity {
             fcR1HeldByX = false;
             fcUpdateR1();
         }
+    }
+
+    private boolean fcR2HeldByButton = false;
+    private boolean fcR2HeldByPass = false;
+
+    /** PathZz2: the PASS button also holds R2 while it is pressed (only in the football layout). */
+    private void fcSetR2ByPass(boolean pressed) {
+        if (!BuildConfig.GAME_MODE || currentControllerMode != 3) return;
+        fcR2HeldByPass = pressed;
+        fcUpdateR2();
+    }
+
+    /** R2 stays pressed while either the R2 button or the PASS button wants it. */
+    private void fcUpdateR2() {
+        NativeApp.setPadButton(KeyEvent.KEYCODE_BUTTON_R2, 0, fcR2HeldByButton || fcR2HeldByPass);
     }
 
     /** R1 stays pressed while either the R1 button or a held X wants it. */
