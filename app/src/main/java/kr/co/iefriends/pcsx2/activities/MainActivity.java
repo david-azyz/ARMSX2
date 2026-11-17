@@ -3840,9 +3840,7 @@ public class MainActivity extends AppCompatActivity {
             btn_pad_a.setScaleY(faceScale);
             btn_pad_a.setOnPSButtonListener(pressed -> {
                 int action = pressed ? MotionEvent.ACTION_DOWN : MotionEvent.ACTION_UP;
-                if (pressed) fcSetR2ByPass(true); // PathZz2: pass with R2 held = more accurate pass
                 sendKeyAction(btn_pad_a, action, KeyEvent.KEYCODE_BUTTON_A);
-                if (!pressed) fcSetR2ByPass(false);
                 fcHandleXHoldSprint(btn_pad_a, pressed);
             });
         }
@@ -3912,10 +3910,7 @@ public class MainActivity extends AppCompatActivity {
             applyShoulderIcon(btn_pad_r2, R.drawable.ic_ps_r2, "ic_controller_r2_button.png");
             btn_pad_r2.setScaleX(1.0f);
             btn_pad_r2.setScaleY(isNether ? 0.6f : 1.0f);
-            btn_pad_r2.setOnPSShoulderButtonListener(pressed -> {
-                fcR2HeldByButton = pressed;
-                fcUpdateR2();
-            });
+            btn_pad_r2.setOnPSShoulderButtonListener(pressed -> NativeApp.setPadButton(KeyEvent.KEYCODE_BUTTON_R2, 0, pressed));
         }
 
         PSButtonView btn_pad_l3 = findViewById(R.id.btn_pad_l3);
@@ -5157,21 +5152,6 @@ public class MainActivity extends AppCompatActivity {
             fcR1HeldByX = false;
             fcUpdateR1();
         }
-    }
-
-    private boolean fcR2HeldByButton = false;
-    private boolean fcR2HeldByPass = false;
-
-    /** PathZz2: the PASS button also holds R2 while it is pressed (only in the football layout). */
-    private void fcSetR2ByPass(boolean pressed) {
-        if (!BuildConfig.GAME_MODE || currentControllerMode != 3) return;
-        fcR2HeldByPass = pressed;
-        fcUpdateR2();
-    }
-
-    /** R2 stays pressed while either the R2 button or the PASS button wants it. */
-    private void fcUpdateR2() {
-        NativeApp.setPadButton(KeyEvent.KEYCODE_BUTTON_R2, 0, fcR2HeldByButton || fcR2HeldByPass);
     }
 
     /** R1 stays pressed while either the R1 button or a held X wants it. */
